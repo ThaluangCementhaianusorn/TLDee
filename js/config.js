@@ -4,7 +4,7 @@
  *           ถ้าเว้นว่าง ระบบจะทำงานใน "โหมดสาธิต" (เก็บข้อมูลในเครื่องผู้ใช้)
  * ===================================================================== */
 window.CONFIG = {
-  API_URL: '',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwlZQT6keBpy4W81tMNKm8vTV8ljKiO6bFw4E8ufqVxbcRsx4rCEEbIwJaOOe-lP4sD/exec',
   REFRESH_SECONDS: 10,         // ความถี่ตรวจสอบข้อมูลใหม่แบบเรียลไทม์ (วินาที)
   DIRECTOR_NAME: '',           // ชื่อผู้อำนวยการ (แสดงบนเกียรติบัตร) เว้นว่างได้
   DIRECTOR_TITLE: 'ผู้อำนวยการวิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์'
