@@ -753,7 +753,14 @@ function respond_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+// ติดตั้งอัตโนมัติเมื่อมีการเรียกใช้ครั้งแรก (กรณีไม่ได้กด Run setup เอง)
+function ensureReady_() {
+  if (props_().getProperty('READY')) return;
+  setup();
+}
+
 function run_(payload) {
+  ensureReady_();
   var api = api_();
   if (api.isWrite(payload.action)) {
     var lock = LockService.getScriptLock();
@@ -767,6 +774,7 @@ function run_(payload) {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action) return respond_(run_(p));
+  ensureReady_();
   return respond_({ ok: true, data: { app: TLD.APP_NAME, status: 'API พร้อมใช้งาน', version: props_().getProperty('VERSION') } });
 }
 
@@ -791,6 +799,7 @@ function setup() {
   var first = ss && ss.getSheetByName('Sheet1') || ss && ss.getSheetByName('ชีต1');
   if (first && ss.getSheets().length > 1 && first.getLastRow() === 0) ss.deleteSheet(first);
   db.bump();
+  props_().setProperty('READY', '1');
   Logger.log('ติดตั้งเรียบร้อย ✔  ผู้ดูแลระบบ: admin / admin1234 (กรุณาเปลี่ยนรหัสผ่านหลังเข้าสู่ระบบ)');
 }
 
