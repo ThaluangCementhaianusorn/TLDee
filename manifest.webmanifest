@@ -1,0 +1,14 @@
+{
+  "name": "คนดีศรีท่าหลวง (ทำดีมีเกียรติ)",
+  "short_name": "คนดีศรีท่าหลวง",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F7F3EE",
+  "theme_color": "#8B1E24",
+  "lang": "th",
+  "icons": [
+    { "src": "assets/logo-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/logo-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

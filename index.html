@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>คนดีศรีท่าหลวง (ทำดีมีเกียรติ) | วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์</title>
+  <meta name="description" content="ระบบจัดเก็บผลงานผู้เรียนด้านคุณธรรม จริยธรรม และจิตอาสา วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์">
+  <meta name="theme-color" content="#8B1E24">
+  <link rel="icon" type="image/png" href="assets/logo-192.png">
+  <link rel="apple-touch-icon" href="assets/logo-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#/" aria-label="หน้าแรก">
+        <img src="assets/logo-192.png" alt="ตราวิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์" width="56" height="56">
+        <span class="brand-text">
+          <b>คนดีศรีท่าหลวง</b>
+          <small>ทำดีมีเกียรติ · วท.ท่าหลวงซิเมนต์ไทยอนุสรณ์</small>
+        </span>
+      </a>
+      <span class="live" id="live" title="สถานะการเชื่อมต่อ"><i></i><span>เรียลไทม์</span></span>
+      <button class="menu-btn" id="menuBtn" aria-label="เปิดเมนู" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+      <nav class="nav" id="nav" aria-label="เมนูหลัก"></nav>
+    </div>
+  </header>
+  <div id="demoBar"></div>
+
+  <main id="app" class="container" tabindex="-1"></main>
+
+  <footer class="footer">
+    <img src="assets/logo-192.png" alt="" width="44" height="44">
+    <div>
+      <b>ระบบคนดีศรีท่าหลวง (ทำดีมีเกียรติ)</b><br>
+      วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์ · สำนักงานคณะกรรมการการอาชีวศึกษา
+    </div>
+  </footer>
+
+  <div id="toast" class="toast-wrap" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+  <div id="printArea"></div>
+  <style id="pageStyle"></style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

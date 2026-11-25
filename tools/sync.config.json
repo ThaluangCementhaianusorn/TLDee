@@ -1,0 +1,8 @@
+{
+  "owner": "",
+  "repo": "TLDee",
+  "branch": "main",
+  "private": false,
+  "pages": true,
+  "ignore": [".git", "node_modules", ".claude", ".vscode", "Thumbs.db", "desktop.ini", ".DS_Store", "TL-Dee.docx", "ttc_no_bg.png"]
+}
