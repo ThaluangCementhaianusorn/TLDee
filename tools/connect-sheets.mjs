@@ -15,12 +15,17 @@ const infoFile = path.join(gasDir, 'info.json');
 const CLASP = '@google/clasp@2.4.2';
 const TITLE = 'คนดีศรีท่าหลวง-ฐานข้อมูล';
 
-function clasp(args, { inherit = false } = {}) {
+function clasp(args, { inherit = false, retried = false } = {}) {
   const r = spawnSync('npx', ['-y', CLASP, ...args], {
     cwd: gasDir, shell: true, encoding: 'utf8', stdio: inherit ? 'inherit' : 'pipe'
   });
   const out = (r.stdout || '') + (r.stderr || '');
-  if (!inherit) process.stdout.write(out);
+  if (!inherit) process.stdout.write(out.replace(/npm notice.*\n?/g, ''));
+  if (r.status !== 0 && !retried && /invalid_grant|not logged in|No credentials|clasp login/i.test(out)) {
+    console.log('\n>> การล็อกอิน Google หมดอายุ — เปิดเบราว์เซอร์เพื่อเข้าสู่ระบบใหม่ (เลือกบัญชีที่เป็นเจ้าของ Google Sheets)...');
+    spawnSync('npx', ['-y', CLASP, 'login'], { cwd: gasDir, shell: true, stdio: 'inherit' });
+    return clasp(args, { inherit, retried: true });
+  }
   if (r.status !== 0) {
     if (/Apps Script API|usersettings/i.test(out)) {
       console.error('\n>> ต้องเปิด Google Apps Script API ก่อน: https://script.google.com/home/usersettings  (เปิดเป็น On) แล้วรันใหม่');
@@ -41,12 +46,25 @@ if (!fs.existsSync(path.join(os.homedir(), '.clasprc.json'))) {
   clasp(['login'], { inherit: true });
 }
 
-// 1) สร้าง Sheet + Script
+// 1) สร้าง Sheet + Script  (ระบุ Google Sheets ที่มีอยู่ได้: node tools/connect-sheets.mjs <ลิงก์หรือ ID ของชีต>)
 step(1, 'Google Sheets + Apps Script');
-if (!fs.existsSync(path.join(gasDir, '.clasp.json'))) {
-  const out = clasp(['create', '--type', 'sheets', '--title', `"${TITLE}"`, '--rootDir', '.']);
-  const sheet = out.match(/https:\/\/drive\.google\.com\/open\?id=[\w-]+/) || out.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+/);
-  if (sheet) info.sheetUrl = sheet[0];
+const arg = process.argv[2] || '';
+const wantId = (arg.match(/\/spreadsheets\/d\/([\w-]{20,})/) || arg.match(/^([\w-]{20,})$/) || [])[1] || '';
+const claspJson = path.join(gasDir, '.clasp.json');
+if (wantId && info.sheetId && info.sheetId !== wantId && fs.existsSync(claspJson)) {
+  console.log('เปลี่ยนไปใช้ Google Sheets ใหม่ — สร้าง Apps Script ชุดใหม่ผูกกับชีตนี้');
+  fs.unlinkSync(claspJson); delete info.deploymentId; delete info.apiUrl;
+}
+if (!fs.existsSync(claspJson)) {
+  if (wantId) {
+    clasp(['create', '--title', `"${TITLE}"`, '--parentId', wantId, '--rootDir', '.']);
+    info.sheetId = wantId;
+    info.sheetUrl = `https://docs.google.com/spreadsheets/d/${wantId}/edit`;
+  } else {
+    const out = clasp(['create', '--type', 'sheets', '--title', `"${TITLE}"`, '--rootDir', '.']);
+    const sheet = out.match(/https:\/\/drive\.google\.com\/open\?id=([\w-]+)/) || out.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+)/);
+    if (sheet) { info.sheetUrl = sheet[0]; info.sheetId = sheet[1]; }
+  }
   save();
 } else console.log('มีอยู่แล้ว — ใช้ชุดเดิม');
 const scriptId = JSON.parse(fs.readFileSync(path.join(gasDir, '.clasp.json'), 'utf8')).scriptId;
