@@ -304,6 +304,10 @@
 
         '<section class="section"><div id="hStats">' + skel(4) + '</div></section>' +
 
+        '<section class="section split wide-l">' +
+        '<div class="card"><div class="section-head"><h2>อันดับแผนกวิชาทำความดี</h2><span class="muted" id="hRankNote"></span></div><div id="hRank">' + skel(1) + '</div></div>' +
+        '<div class="card"><div class="section-head"><h2>ความดีล่าสุด</h2></div><div id="hFeed">' + skel(1) + '</div></div></section>' +
+
         '<section class="section split">' +
         '<div class="card"><div class="section-head"><h2>ยอดนักทำความดี Top 5</h2></div><div id="hTop">' + skel(1) + '</div></div>' +
         '<div class="card"><div class="section-head"><h2>เกณฑ์คะแนนและเกียรติบัตร</h2></div>' +
@@ -311,23 +315,10 @@
         TLD.CATEGORIES.map(function (c) { return '<li>' + catIcon(c.id) + '<span style="flex:1">' + esc(c.name) + '</span><span class="pts">+' + c.points + '</span></li>'; }).join('') +
         '</ul></div><div><h3>ระดับเกียรติบัตร (ปวช.1 – ปวส.2)</h3><ul class="criteria">' +
         TLD.MEDALS.map(function (m) { return '<li>' + medalIcon(m.key) + '<span><b>' + esc(m.name) + ' · ' + m.min + ' แต้ม</b><span class="muted">' + esc(m.title) + '</span></span></li>'; }).join('') +
-        '</ul></div></div></div></section>' +
-
-        '<section class="section"><div class="section-head"><h2>เรื่องราวความดีล่าสุด</h2></div>' +
-        '<div class="chips" id="hDept"></div><div id="hFeed" style="margin-top:16px">' + skel(3) + '</div></section>';
+        '</ul></div></div></div></section>';
       var hs = $('#hScan');
       if (hs) hs.onclick = function () { Login.scan(); };
-      this.chips();
       this.refresh();
-    },
-    chips: function () {
-      var self = this;
-      $('#hDept').innerHTML = [''].concat(TLD.DEPTS).map(function (d) {
-        return '<button class="chip' + (self.dept === d ? ' on' : '') + '" data-d="' + esc(d) + '">' + (d ? esc(d) : 'ทุกแผนกวิชา') + '</button>';
-      }).join('');
-      $$('#hDept .chip').forEach(function (b) {
-        b.onclick = function () { self.dept = b.dataset.d; self.chips(); self.feed(); };
-      });
     },
     refresh: function () {
       var self = this;
@@ -345,24 +336,28 @@
         return '<li><span class="rank">' + (i + 1) + '</span><span class="who"><b>' + esc(s.name) + '</b><small>' + esc(s.dept) + ' · ' + esc(s.level) + '</small></span>' +
           medalIcon(s.medal) + '<span class="pts">' + s.points + ' <small>แต้ม</small></span></li>';
       }).join('') + '</ol>' : empty('ยังไม่มีข้อมูลการจัดอันดับ', 'trophy');
-      this.feed();
+      this.rank(d.deptRank || []);
+      this.feed(d.feed || []);
     },
-    feed: function () {
-      if (!this.data || !$('#hFeed')) return;
-      var dept = this.dept;
-      var list = this.data.feed.filter(function (f) { return !dept || f.dept === dept; });
-      $('#hFeed').innerHTML = list.length ? '<div class="feed">' + list.map(deedCard).join('') + '</div>' : empty('ยังไม่มีเรื่องราวความดีในแผนกนี้', 'sprout');
-      $$('#hFeed [data-img]').forEach(function (b) { b.onclick = function () { showImage(b.dataset.img); }; });
+    rank: function (list) {
+      var max = Math.max.apply(null, [1].concat(list.map(function (r) { return r.points; })));
+      var lead = list[0] && list[0].points ? list[0] : null;
+      $('#hRankNote').textContent = lead ? 'แผนกนำ: ' + lead.name : '';
+      $('#hRank').innerHTML = list.length ? '<ol class="drank">' + list.map(function (r, i) {
+        var pos = r.points ? i + 1 : 0, cls = r.points && i < 3 ? ' r' + (i + 1) : '';
+        return '<li class="' + (r.points ? '' : 'zero') + cls + '"><span class="rk">' + (pos || '–') + '</span>' +
+          '<div class="dn"><div class="dt"><b>' + esc(r.name) + '</b><span class="dp">' + num(r.points) + ' <small>แต้ม</small></span></div>' +
+          '<div class="dbar"><i style="width:' + (r.points / max * 100).toFixed(1) + '%"></i></div>' +
+          '<div class="dm">' + ic('check') + num(r.count) + ' ครั้ง <span>' + ic('users') + 'ร่วม ' + num(r.people) + ' คน</span><span>' + ic('award') + num(r.medals) + ' เหรียญ</span></div></div></li>';
+      }).join('') + '</ol>' : empty('ยังไม่มีข้อมูลแผนกวิชา', 'building');
+    },
+    feed: function (list) {
+      $('#hFeed').innerHTML = list.length ? '<ul class="mini-feed">' + list.slice(0, 6).map(function (d) {
+        return '<li>' + catIcon(d.category) + '<div class="mf"><b>' + esc(d.studentName) + '</b><span class="mt">' + esc(d.detail) + '</span>' +
+          '<small>' + esc(d.dept) + ' · ' + thDate(d.date) + '</small></div><span class="tag pts-tag">+' + d.points + '</span></li>';
+      }).join('') + '</ul>' : empty('ยังไม่มีเรื่องราวความดี', 'sprout');
     }
   };
-  function deedCard(d) {
-    return '<article class="deed">' +
-      (d.imageUrl ? '<button class="pic" data-img="' + esc(d.imageUrl) + '" aria-label="ดูรูปขนาดใหญ่">' + imgOrIcon(d) + '</button>' : '<div class="pic nopic" style="--c:' + cat(d.category).color + '">' + imgOrIcon(d) + '</div>') +
-      '<div class="body"><div class="row" style="gap:8px">' + catTag(d.category) + '<span class="tag pts-tag">+' + d.points + ' แต้ม</span></div>' +
-      '<div class="name">' + esc(d.studentName) + '</div><div class="meta">' + esc(d.dept) + ' · ' + esc(d.level) + ' · ' + thDate(d.date) + '</div>' +
-      '<div class="txt">' + esc(d.detail) + '</div>' +
-      (d.recordedByName ? '<div class="meta">' + ic('award') + ' บันทึกโดย ' + esc(d.recordedByName) + '</div>' : '') + '</div></article>';
-  }
 
   /* ===================================================================
    * VIEW: ตรวจสอบเกียรติบัตร
@@ -506,11 +501,11 @@
     edit: null,
     render: function (el) {
       var u = S.user, self = this;
-      this.edit = null; this.form = { image: '' };
+      this.edit = null; this.form = { image: '' }; this.pfR = null;
       el.innerHTML = '<div id="sProg" class="card progress-card"><div class="skel" style="opacity:.2"></div></div>' +
         '<div class="section"><div class="tabs" role="tablist">' +
         '<button class="on" data-t="form">' + ic('pen') + 'รายงานความดี</button><button data-t="hist">' + ic('list') + 'ประวัติของฉัน <span class="badge" id="sCnt">0</span></button>' +
-        '<button data-t="cert">' + ic('award') + 'เกียรติบัตร / E-Portfolio</button><button data-t="qr">' + ic('qr') + 'บัตร QR ของฉัน</button></div>' +
+        '<button data-t="cert">' + ic('award') + 'เกียรติบัตร</button><button data-t="pf">' + ic('palette') + 'ออกแบบ Portfolio</button><button data-t="qr">' + ic('qr') + 'บัตร QR ของฉัน</button></div>' +
         '<div data-p="form" class="card"><div id="sEditBar"></div><h2>แบบฟอร์มรายงานการทำความดี</h2>' +
         '<form id="sForm"><div class="grid g4 ro">' +
         roField('รหัสนักศึกษา', u.id) + roField('ชื่อ-นามสกุล', u.name) + roField('แผนกวิชา', u.dept) + roField('ระดับชั้น', u.level) + '</div>' +
@@ -523,6 +518,7 @@
         '<button class="btn btn-primary btn-block" id="sSubmit">' + ic('upload') + 'ส่งรายงานการทำความดี</button></form></div>' +
         '<div data-p="hist" class="card hide"><h2>ประวัติการรายงานและสถานะ</h2><div id="sHist">' + skel(1) + '</div></div>' +
         '<div data-p="cert" class="card hide"><h2>เกียรติบัตรและระเบียนประวัติความดี</h2><div id="sCert"></div></div>' +
+        '<div data-p="pf" class="card hide"><h2>ออกแบบ E-Portfolio ของฉัน</h2><p class="muted" style="margin-top:-6px">เลือกรูปแบบ สี ฟอนต์ ใส่รูปและแนะนำตัว แล้วกดบันทึก — ครูและผู้ดูแลจะพิมพ์ Portfolio ของคุณตามธีมนี้</p><div id="sPf">' + skel(1) + '</div></div>' +
         '<div data-p="qr" class="card hide"><h2>บัตร QR Code ประจำตัว</h2><div id="sQr">' + skel(1) + '</div></div></div>';
       $$('.tabs button', el).forEach(function (b) { b.onclick = function () { self.tab(b.dataset.t); }; });
       bindUpload($('#sUp'), this.form);
@@ -533,6 +529,89 @@
       $$('.tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });
       $$('[data-p]').forEach(function (p) { p.classList.toggle('hide', p.dataset.p !== t); });
       if (t === 'qr') this.qr();
+      if (t === 'pf') this.pfLoad();
+    },
+    /* ---------- ออกแบบ E-Portfolio ---------- */
+    pfLoad: function () {
+      var self = this;
+      if (this.pfR && $('#pfPrev')) return this.pfScale();
+      API.call('studentReport', {}).then(function (r) {
+        self.pfR = r; self.pfT = PF.norm(r.portfolio); self.pfForm();
+      }).catch(handleErr);
+    },
+    pfForm: function () {
+      var self = this, t = this.pfT, box = $('#sPf');
+      if (!box) return;
+      var sw = function (name, list, val) {
+        return '<div class="swatches">' + list.map(function (c) {
+          return '<label title="' + c + '"><input type="radio" name="' + name + '" value="' + c + '"' + (c.toLowerCase() === val.toLowerCase() ? ' checked' : '') + '><span style="--sw:' + c + '"></span></label>';
+        }).join('') + '<label class="custom" title="เลือกสีเอง"><input type="color" name="' + name + 'C" value="' + val + '"><span>' + ic('palette') + '</span></label></div>';
+      };
+      var chk = function (n, label) { return '<label class="chk"><input type="checkbox" name="' + n + '"' + (t[n] ? ' checked' : '') + '><span>' + label + '</span></label>'; };
+      box.innerHTML = '<div class="pf-editor"><form class="pf-ctl" id="pfCtl" onsubmit="return false">' +
+        '<div class="field"><span class="label">1) รูปแบบเทมเพลต</span><div class="tpl-pick pf-pick">' + PF.LAYOUTS.map(function (l) {
+          return '<label class="tpl"><input type="radio" name="layout" value="' + l.id + '"' + (t.layout === l.id ? ' checked' : '') + '><span class="pf-thumb l-' + l.id + '"><i></i><b></b><u></u></span>' + esc(l.name) + '</label>';
+        }).join('') + '</div></div>' +
+        '<div class="field"><span class="label">2) สีหลัก</span>' + sw('color', PF.COLORS, t.color) + '</div>' +
+        '<div class="field"><span class="label">3) สีเน้น</span>' + sw('accent', PF.ACCENTS, t.accent) + '</div>' +
+        '<div class="field"><span class="label">4) ฟอนต์หัวข้อ</span><div class="seg small">' +
+        '<label><input type="radio" name="font" value="kanit"' + (t.font === 'kanit' ? ' checked' : '') + '><span style="font-family:Kanit">Kanit ทันสมัย</span></label>' +
+        '<label><input type="radio" name="font" value="sarabun"' + (t.font === 'sarabun' ? ' checked' : '') + '><span style="font-family:Sarabun">Sarabun ทางการ</span></label></div></div>' +
+        '<div class="field"><span class="label">5) รูปโปรไฟล์</span><div class="row"><label class="btn btn-ghost btn-sm pf-up"><input type="file" accept="image/*" id="pfPhoto" hidden>' + ic('camera') + 'เลือกรูป</label>' +
+        '<button type="button" class="btn btn-ghost btn-sm" id="pfNoPhoto">' + ic('trash') + 'ลบรูป</button></div></div>' +
+        '<div class="field"><label for="pfTitle">6) หัวข้อเอกสาร</label><input class="input" id="pfTitle" name="title" maxlength="80" placeholder="' + esc(PF.DEF_TITLE) + '" value="' + esc(t.title) + '"></div>' +
+        '<div class="field"><label for="pfAbout">แนะนำตัว / ความภาคภูมิใจ</label><textarea class="input" id="pfAbout" name="about" maxlength="400" placeholder="เช่น ชอบช่วยเหลือผู้อื่น เป็นจิตอาสาประจำห้องสมุด...">' + esc(t.about) + '</textarea></div>' +
+        '<div class="field"><label for="pfGoal">เป้าหมายของฉัน</label><input class="input" id="pfGoal" name="goal" maxlength="160" placeholder="เช่น ศึกษาต่อวิศวกรรมเครื่องกล" value="' + esc(t.goal) + '"></div>' +
+        '<div class="field"><span class="label">แสดงในเอกสาร</span><div class="chks">' + chk('showPhoto', 'รูปโปรไฟล์') + chk('showChart', 'กราฟสรุปหมวดหมู่') + chk('showSign', 'ลายเซ็นผู้อำนวยการ') + '</div></div>' +
+        '<div class="grid g2"><button type="button" class="btn btn-primary" id="pfSave">' + ic('save') + 'บันทึกธีม</button>' +
+        '<button type="button" class="btn btn-gold" id="pfPrint"' + (this.pfR.deeds.length ? '' : ' disabled') + '>' + ic('printer') + 'พิมพ์ / PDF</button></div></form>' +
+        '<div class="pf-prev-wrap"><div class="muted center" style="margin-bottom:6px">' + ic('eye') + ' ตัวอย่าง (อัปเดตทันที)</div><div class="cert-preview" id="pfPrev"></div></div></div>';
+      var form = $('#pfCtl');
+      var read = function (e) {
+        var f = form.elements, tg = e && e.target;
+        if (tg && /^(color|accent)C$/.test(tg.name)) {          // เลือกสีเอง
+          var k = tg.name.slice(0, -1); t[k] = tg.value;
+          $$('input[name=' + k + ']', form).forEach(function (r) { r.checked = false; });
+        } else {
+          ['color', 'accent'].forEach(function (k) { var c = $('input[name=' + k + ']:checked', form); if (c) { t[k] = c.value; f[k + 'C'].value = c.value; } });
+        }
+        t.layout = ($('input[name=layout]:checked', form) || {}).value || 'classic';
+        t.font = ($('input[name=font]:checked', form) || {}).value || 'kanit';
+        t.title = f.title.value.trim(); t.about = f.about.value.trim(); t.goal = f.goal.value.trim();
+        t.showPhoto = f.showPhoto.checked; t.showChart = f.showChart.checked; t.showSign = f.showSign.checked;
+        self.pfPreview();
+      };
+      form.addEventListener('input', read);
+      form.addEventListener('change', read);
+      $('#pfPhoto').onchange = function () {
+        var file = this.files[0]; if (!file) return;
+        compressImage(file, 480).then(function (d) { t.photo = d; t.showPhoto = true; form.elements.showPhoto.checked = true; self.pfPreview(); }, function (e) { toast(e.message, 'bad'); });
+      };
+      $('#pfNoPhoto').onclick = function () { t.photo = ''; self.pfPreview(); };
+      $('#pfSave').onclick = function () {
+        var b = this; busy(b, true);
+        API.call('savePortfolio', { theme: t }).then(function (saved) {
+          busy(b, false); self.pfT = t = PF.norm(saved); self.pfR.portfolio = saved; self.pfPreview();
+          toast('บันทึกธีม Portfolio แล้ว', 'ok');
+        }).catch(function (e) { busy(b, false); handleErr(e); });
+      };
+      $('#pfPrint').onclick = function () { PF.print(self.pfR, t); };
+      if (!this.pfResize) { this.pfResize = function () { Student.pfScale(); }; window.addEventListener('resize', this.pfResize); }
+      this.pfPreview();
+    },
+    pfPreview: function () {
+      var box = $('#pfPrev');
+      if (!box) return;
+      box.innerHTML = '<div class="cert-scale">' + PF.html(this.pfR, this.pfT, 'pfQr') + '</div>';
+      Printer.qr($('#pfQr'), this.pfR.portfolioCode);
+      this.pfScale();
+    },
+    pfScale: function () {
+      var box = $('#pfPrev'), sc = box && $('.cert-scale', box), p = sc && $('.paper', sc);
+      if (!p || !box.clientWidth) return;
+      var s = box.clientWidth / p.offsetWidth;
+      sc.style.transform = 'scale(' + s + ')';
+      box.style.height = (p.offsetHeight * s) + 'px';
     },
     qr: function () {
       API.call('qrCodes').then(function (l) {
@@ -1298,6 +1377,90 @@
   /* ===================================================================
    * การพิมพ์: เกียรติบัตร / E-Portfolio / บัตร QR / รายงานผู้บริหาร
    * =================================================================== */
+  /* ===================================================================
+   * E-Portfolio: ธีม/เทมเพลตที่นักศึกษาออกแบบเอง
+   * =================================================================== */
+  var PF = {
+    LAYOUTS: [
+      { id: 'classic', name: 'คลาสสิก' }, { id: 'modern', name: 'โมเดิร์น แถบสี' },
+      { id: 'timeline', name: 'ไทม์ไลน์' }, { id: 'minimal', name: 'มินิมอล' }
+    ],
+    COLORS: ['#8B1E24', '#14244B', '#1E6B47', '#5B3A99', '#0E7380', '#B4541A', '#A72F68', '#2B2F3A'],
+    ACCENTS: ['#D99B26', '#E8C35A', '#9AA6B8', '#C27B47', '#3FA7D6', '#7CC36B', '#E36F8E'],
+    DEF_TITLE: 'ระเบียนประวัติการทำความดีและจิตอาสา',
+    norm: function (t) {
+      t = t || {};
+      var hex = /^#[0-9a-fA-F]{6}$/;
+      return {
+        layout: PF.LAYOUTS.some(function (l) { return l.id === t.layout; }) ? t.layout : 'classic',
+        color: hex.test(t.color || '') ? t.color : '#8B1E24',
+        accent: hex.test(t.accent || '') ? t.accent : '#D99B26',
+        font: t.font === 'sarabun' ? 'sarabun' : 'kanit',
+        title: t.title || '', about: t.about || '', goal: t.goal || '', photo: t.photo || '',
+        showChart: t.showChart !== false, showSign: t.showSign !== false, showPhoto: t.showPhoto !== false
+      };
+    },
+    html: function (r, t, qrId) {
+      var s = r.student, m = medalInfo(s.medal), cfg = S.cfg.cert, L = t.layout;
+      // จำนวนรายการให้พอดี A4 หนึ่งหน้า (เพิ่มได้เมื่อปิดกราฟ/ไม่มีคำแนะนำตัว)
+      var MAX = (L === 'timeline' ? 7 : L === 'modern' ? 11 : 12) + (t.showChart ? 0 : (L === 'timeline' ? 3 : 4)) + (t.about || t.goal ? 0 : 2), rows = r.deeds.slice(-MAX), from = r.deeds.length - rows.length;
+      var photo = !t.showPhoto ? '' : '<div class="pf-photo">' + (t.photo ? '<img src="' + esc(t.photo) + '" alt="" referrerpolicy="no-referrer">' : ic('user')) + '</div>';
+      var title = esc(t.title || PF.DEF_TITLE);
+      var head = '<div class="pf-head"><img src="assets/logo-192.png" alt=""><div><h1>' + title + '</h1><p>Good Deeds E-Portfolio · ' + esc(TLD.COLLEGE) + '</p></div></div>';
+      var kv = '<dl class="kv"><dt>รหัสนักศึกษา</dt><dd>' + esc(s.id) + '</dd><dt>แผนกวิชา</dt><dd>' + esc(s.dept) + '</dd>' +
+        '<dt>ระดับชั้น</dt><dd>' + esc(s.level) + '</dd><dt>ครูที่ปรึกษา</dt><dd>' + esc(s.advisorName || '-') + '</dd></dl>';
+      var qr = '<div class="pf-qr"><div class="qrbox" id="' + qrId + '"></div><small>' + esc(r.portfolioCode) + '</small></div>';
+      var sum = '<div class="pf-sum"><div><b>' + r.deeds.length + '</b>รายการความดี</div><div><b>' + s.points + '</b>แต้มสะสม</div>' +
+        '<div class="md">' + (m ? UI.medalSvg(m.key) : '') + '<span><b>' + (m ? esc(m.name) : '-') + '</b>ระดับเกียรติบัตร</span></div></div>';
+      var about = (t.about || t.goal) ? '<div class="pf-about">' + (t.about ? '<h2>แนะนำตัว</h2><p>' + esc(t.about) + '</p>' : '') +
+        (t.goal ? '<p class="goal">' + ic('target') + ' <b>เป้าหมายของฉัน:</b> ' + esc(t.goal) + '</p>' : '') + '</div>' : '';
+      var chart = '';
+      if (t.showChart) {
+        var agg = {}, max = 1;
+        r.deeds.forEach(function (d) { agg[d.category] = (agg[d.category] || 0) + Number(d.points || 0); });
+        TLD.CATEGORIES.forEach(function (c) { max = Math.max(max, agg[c.id] || 0); });
+        chart = '<div class="pf-chart"><h2>สรุปแต้มตามหมวดหมู่</h2>' + TLD.CATEGORIES.map(function (c) {
+          var v = agg[c.id] || 0;
+          return '<div class="cr"><span>' + esc(c.short) + '</span><i><em style="width:' + (v / max * 100).toFixed(1) + '%"></em></i><b>' + v + '</b></div>';
+        }).join('') + '</div>';
+      }
+      var list;
+      if (!rows.length) list = '<p class="pf-none">ยังไม่มีรายการที่ได้รับการรับรอง</p>';
+      else if (L === 'timeline') {
+        list = '<h2>เส้นทางความดีของฉัน</h2><ol class="pf-tl">' + rows.map(function (d) {
+          var x = String(d.detail || ''); if (x.length > 150) x = x.slice(0, 148) + '…';
+          return '<li><time>' + thDate(d.date) + '</time><div><span class="ct">' + esc(cat(d.category).short) + ' · +' + d.points + ' แต้ม</span>' +
+            '<p>' + esc(x) + '</p><small>รับรองโดย ' + esc(d.recordedByName || d.reviewedBy || '-') + '</small></div></li>';
+        }).join('') + '</ol>';
+      } else {
+        list = '<h2>รายการการทำความดีที่ได้รับการรับรอง</h2><table><thead><tr><th style="width:7%">ที่</th><th style="width:15%">วันที่</th><th style="width:17%">หมวดหมู่</th><th>รายละเอียด</th><th style="width:7%">แต้ม</th><th style="width:16%">ผู้รับรอง</th></tr></thead><tbody>' +
+          rows.map(function (d, i) {
+            var x = String(d.detail || ''); if (x.length > 100) x = x.slice(0, 98) + '…';
+            return '<tr><td>' + (from + i + 1) + '</td><td>' + thDate(d.date) + '</td><td>' + esc(cat(d.category).short) + '</td><td>' + esc(x) + '</td><td>' + d.points + '</td><td>' + esc(d.recordedByName || d.reviewedBy || '-') + '</td></tr>';
+          }).join('') + '</tbody></table>';
+      }
+      if (r.deeds.length > MAX) list += '<p class="pf-more">* แสดง ' + MAX + ' รายการล่าสุด จากทั้งหมด ' + r.deeds.length + ' รายการ</p>';
+      var sign = !t.showSign ? '' : '<div class="p-sign">' + (cfg.signature ? '<img src="' + esc(cfg.signature) + '" alt="" referrerpolicy="no-referrer">' : '<div style="height:14mm"></div>') +
+        '<div class="sig-line"></div>(' + esc(cfg.directorName || '.......................................') + ')<br>' + esc(cfg.directorTitle) + '</div>';
+      var foot = '<div class="foot"><span>ออกโดยระบบคนดีศรีท่าหลวง เมื่อ ' + thDate(today(), true) + '</span><span>ตรวจสอบความถูกต้องได้โดยสแกน QR Code</span></div>';
+      var name = '<div class="pf-name">' + esc(s.name) + '</div>';
+      var body;
+      if (L === 'modern') {
+        body = '<div class="pf-band">' + photo + '<div class="who"><small>' + title + '</small>' + name + '<div>' + esc(s.dept) + ' · ' + esc(s.level) + ' · รหัส ' + esc(s.id) + '</div></div><img class="lg" src="assets/logo-192.png" alt=""></div>' +
+          '<div class="pf-in">' + sum + '<div class="pf-cols"><aside>' + about + chart + '<div class="kvbox">' + kv + '</div>' + qr + '</aside><main>' + list + sign + '</main></div>' + foot + '</div>';
+      } else if (L === 'minimal') {
+        body = '<div class="pf-top">' + photo + '<div class="who">' + name + '<div class="sub">' + title + '</div>' + kv + '</div>' + qr + '</div>' +
+          sum + about + list + chart + sign + foot + '<div class="pf-mark">' + esc(TLD.COLLEGE) + '</div>';
+      } else {
+        body = head + '<div class="pf-top">' + photo + '<div class="who">' + name + kv + '</div>' + qr + '</div>' + sum + about + chart + list + sign + foot;
+      }
+      return '<div class="paper pf l-' + L + ' f-' + t.font + '" style="--pc:' + t.color + ';--pa:' + t.accent + '">' + body + '</div>';
+    },
+    print: function (r, t) {
+      Printer.go(PF.html(r, t, 'pQr'), 'portrait', function (a) { Printer.qr($('#pQr', a), r.portfolioCode); });
+    }
+  };
+
   var Printer = {
     verifyUrl: function (code) { return siteBase() + '#/verify/' + encodeURIComponent(code); },
     qr: function (el, code, url) {
@@ -1340,27 +1503,10 @@
       }).catch(function (e) { busy(btn, false); handleErr(e); });
     },
     portfolio: function (sid, btn) {
-      var self = this;
       busy(btn, true);
       API.call('studentReport', { studentId: sid }).then(function (r) {
         busy(btn, false);
-        var s = r.student, m = medalInfo(s.medal), MAX = 20, cfg = S.cfg.cert;
-        var rows = r.deeds.slice(-MAX);
-        var html = '<div class="paper">' + self.head('ระเบียนประวัติการทำความดีและจิตอาสา', 'Good Deeds E-Portfolio · โครงการคนดีศรีท่าหลวง (ทำดีมีเกียรติ)') +
-          '<div class="info"><dl class="kv"><dt>ชื่อ-สกุล</dt><dd>' + esc(s.name) + '</dd><dt>รหัสนักศึกษา</dt><dd>' + esc(s.id) + '</dd>' +
-          '<dt>แผนกวิชา</dt><dd>' + esc(s.dept) + '</dd><dt>ระดับชั้น</dt><dd>' + esc(s.level) + '</dd><dt>ครูที่ปรึกษา</dt><dd>' + esc(s.advisorName || '-') + '</dd></dl>' +
-          '<div class="center"><div class="qrbox" id="pQr"></div><div style="font-size:8pt">' + esc(r.portfolioCode) + '</div></div></div>' +
-          '<div class="sum"><div><b>' + r.deeds.length + '</b>รายการความดี</div><div><b>' + s.points + '</b>แต้มสะสม</div><div><b>' + (m ? esc(m.name) : '-') + '</b>ระดับเกียรติบัตร</div></div>' +
-          '<h2>รายการการทำความดีที่ได้รับการรับรอง</h2><table><thead><tr><th style="width:8%">ลำดับ</th><th style="width:15%">วันที่</th><th style="width:20%">หมวดหมู่</th><th>รายละเอียด</th><th style="width:7%">แต้ม</th><th style="width:17%">ผู้รับรอง</th></tr></thead><tbody>' +
-          rows.map(function (d, i) {
-            var t = String(d.detail || ''); if (t.length > 100) t = t.slice(0, 98) + '…';
-            return '<tr><td>' + (r.deeds.length - rows.length + i + 1) + '</td><td>' + thDate(d.date) + '</td><td>' + esc(cat(d.category).short) + '</td><td>' + esc(t) + '</td><td>' + d.points + '</td><td>' + esc(d.recordedByName || d.reviewedBy || '-') + '</td></tr>';
-          }).join('') + '</tbody></table>' +
-          (r.deeds.length > MAX ? '<p style="font-size:9pt;color:#555">* แสดง ' + MAX + ' รายการล่าสุด จากทั้งหมด ' + r.deeds.length + ' รายการ</p>' : '') +
-          '<div class="p-sign">' + (cfg.signature ? '<img src="' + esc(cfg.signature) + '" alt="" referrerpolicy="no-referrer">' : '<div style="height:14mm"></div>') +
-          '<div class="sig-line"></div>(' + esc(cfg.directorName || '.......................................') + ')<br>' + esc(cfg.directorTitle) + '</div>' +
-          '<div class="foot"><span>ออกโดยระบบคนดีศรีท่าหลวง เมื่อ ' + thDate(today(), true) + '</span><span>ตรวจสอบความถูกต้องได้โดยสแกน QR Code</span></div></div>';
-        self.go(html, 'portrait', function (a) { self.qr($('#pQr', a), r.portfolioCode); });
+        PF.print(r, PF.norm(r.portfolio));
       }).catch(function (e) { busy(btn, false); handleErr(e); });
     },
     qrCards: function (list) {

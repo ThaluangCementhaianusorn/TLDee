@@ -157,6 +157,38 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pts { font-family: var(--head); font-weight: 600; color: var(--maroon); font-size: 1.35rem; white-space: nowrap; }
 .pts small { font-size: .8rem; color: var(--muted); font-weight: 400; }
 
+/* ---------- อันดับแผนกวิชา ---------- */
+.drank { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.drank li { display: flex; gap: 14px; align-items: center; padding: 10px 8px; border-radius: 14px; }
+.drank li.r1 { background: linear-gradient(90deg, #FFF6DE, transparent); }
+.drank .rk { width: 42px; height: 42px; flex: none; border-radius: 12px; display: grid; place-items: center; font-family: var(--head); font-weight: 700; font-size: 1.2rem; background: var(--navy-l); color: var(--navy); }
+.drank li.r1 .rk { background: linear-gradient(135deg, #FBE3A0, var(--gold)); color: #4D3304; box-shadow: 0 4px 10px rgba(217,155,38,.35); }
+.drank li.r2 .rk { background: linear-gradient(135deg, #EEF1F5, #A9B3C1); color: #2E3644; }
+.drank li.r3 .rk { background: linear-gradient(135deg, #F1CDB2, var(--bronze)); color: #fff; }
+.drank .dn { flex: 1; min-width: 0; }
+.drank .dt { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.drank .dt b { font-family: var(--head); font-weight: 600; font-size: 1.08rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drank .dp { font-family: var(--head); font-weight: 700; color: var(--maroon); font-size: 1.2rem; white-space: nowrap; }
+.drank .dp small { font-size: .78rem; color: var(--muted); font-weight: 400; }
+.drank .dbar { height: 10px; border-radius: 99px; background: #EEF0F5; overflow: hidden; margin: 6px 0 5px; }
+.drank .dbar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--navy-2), var(--navy)); transition: width .6s; }
+.drank li.r1 .dbar i { background: linear-gradient(90deg, #F2C14E, var(--gold-d)); }
+.drank li.r2 .dbar i { background: linear-gradient(90deg, #C3CAD6, #7D8899); }
+.drank li.r3 .dbar i { background: linear-gradient(90deg, #E2A97F, var(--bronze)); }
+.drank .dm { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; color: var(--muted); align-items: center; }
+.drank .dm span { display: inline-flex; gap: 4px; align-items: center; }
+.drank .dm .ic { width: 1em; height: 1em; margin-right: 3px; }
+.drank li.zero { opacity: .55; }
+
+/* ---------- ความดีล่าสุด (ย่อ) ---------- */
+.mini-feed { list-style: none; padding: 0; margin: 0; }
+.mini-feed li { display: flex; gap: 12px; align-items: center; padding: 11px 2px; border-bottom: 1px dashed var(--line); }
+.mini-feed li:last-child { border: 0; }
+.mini-feed .mf { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mini-feed .mf b { font-size: 1.02rem; }
+.mini-feed .mt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-feed small { color: var(--muted); }
+
 /* ---------- Feed ---------- */
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
 .chip { border: 2px solid var(--line); background: #fff; border-radius: 99px; padding: 8px 18px; font-size: 1rem; white-space: nowrap; cursor: pointer; min-height: 46px; }
@@ -584,6 +616,123 @@ label.btn input[hidden] { display: none; }
 .paper .p-sign { width: 85mm; margin: 6mm 0 0 auto; text-align: center; font-size: 10.5pt; line-height: 1.4; }
 .paper .p-sign img { height: 15mm; max-width: 60mm; object-fit: contain; display: block; margin: 0 auto -2mm; }
 .paper .foot { margin-top: 5mm; display: flex; justify-content: space-between; font-size: 9.5pt; color: #555; }
+
+/* ===================== E-Portfolio (ธีมที่นักศึกษาออกแบบ) ===================== */
+.pf { --pc: #8B1E24; --pa: #D99B26; --pfh: var(--head); display: flex; flex-direction: column; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pf.f-sarabun { --pfh: 'Sarabun', sans-serif; }
+.pf h1, .pf h2, .pf .pf-name, .pf .pf-sum b, .pf-tl .ct { font-family: var(--pfh); }
+.pf h2 { color: var(--pc); font-size: 13pt; margin: 5mm 0 2mm; display: flex; align-items: center; gap: 2mm; }
+.pf h2::before { content: ''; width: 1.6mm; height: 5mm; border-radius: 1mm; background: var(--pa); flex: none; }
+.pf-head { display: flex; align-items: center; gap: 5mm; border-bottom: 1mm solid var(--pc); padding-bottom: 3mm; margin-bottom: 6mm; position: relative; }
+.pf-head::after { content: ''; position: absolute; left: 0; bottom: -2.2mm; width: 40mm; height: 1mm; background: var(--pa); }
+.pf-head img { width: 20mm; height: 20mm; }
+.pf-head h1 { font-size: 17pt; margin: 0; color: var(--pc); line-height: 1.25; }
+.pf-head p { margin: 0; font-size: 10pt; color: #555; }
+.pf-top { display: flex; gap: 6mm; align-items: center; }
+.pf-top .who { flex: 1; min-width: 0; }
+.pf-name { font-size: 20pt; font-weight: 700; color: #1A1E2B; line-height: 1.25; margin-bottom: 1.5mm; }
+.pf .kv { font-size: 11pt; gap: .6mm 5mm; }
+.pf-photo { width: 32mm; height: 38mm; border-radius: 3mm; overflow: hidden; flex: none; display: grid; place-items: center; color: var(--pc);
+  background: color-mix(in srgb, var(--pc) 10%, #fff); border: .8mm solid var(--pa); }
+.pf-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pf-photo .ic { width: 15mm; height: 15mm; }
+.pf-qr { text-align: center; flex: none; }
+.pf-qr small { display: block; font-size: 7.5pt; color: #555; margin-top: 1mm; }
+.pf .qrbox img, .pf .qrbox canvas { width: 25mm !important; height: 25mm !important; display: block; }
+.pf-sum { display: flex; gap: 4mm; margin: 5mm 0 1mm; }
+.pf-sum > div { flex: 1; border-radius: 3mm; padding: 2.5mm 3mm; text-align: center; font-size: 10pt;
+  background: color-mix(in srgb, var(--pc) 7%, #fff); border: .3mm solid color-mix(in srgb, var(--pc) 25%, #fff); }
+.pf-sum b { display: block; font-size: 17pt; color: var(--pc); line-height: 1.25; }
+.pf-sum .md { display: flex; align-items: center; justify-content: center; gap: 2.5mm; text-align: left; }
+.pf-sum .md .medal { width: 10mm; height: 12mm; flex: none; }
+.pf-about p { margin: 0 0 2mm; line-height: 1.55; }
+.pf-about .goal { background: color-mix(in srgb, var(--pa) 16%, #fff); border-left: 1.2mm solid var(--pa); padding: 2mm 3mm; border-radius: 0 2mm 2mm 0; }
+.pf-about .goal .ic { color: var(--pc); }
+.pf-chart .cr { display: grid; grid-template-columns: 30mm 1fr 9mm; gap: 3mm; align-items: center; font-size: 10pt; margin-bottom: 1.3mm; }
+.pf-chart i { height: 3.2mm; background: #EEF0F4; border-radius: 2mm; overflow: hidden; display: block; }
+.pf-chart em { display: block; height: 100%; background: linear-gradient(90deg, var(--pc), var(--pa)); border-radius: inherit; }
+.pf-chart b { text-align: right; color: var(--pc); }
+.pf th { background: var(--pc); }
+.pf tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--pc) 4%, #fff); }
+.pf-more, .pf-none { font-size: 9pt; color: #555; }
+.pf .p-sign { margin-top: 7mm; }
+.pf .foot { margin-top: auto; padding-top: 5mm; }
+/* ไทม์ไลน์ */
+.pf-tl { list-style: none; margin: 0; padding: 0; position: relative; }
+.pf-tl::before { content: ''; position: absolute; left: 27.2mm; top: 1mm; bottom: 2mm; width: .6mm; background: color-mix(in srgb, var(--pc) 35%, #fff); }
+.pf-tl li { display: grid; grid-template-columns: 24mm 1fr; gap: 8mm; position: relative; padding-bottom: 3mm; break-inside: avoid; }
+.pf-tl li::before { content: ''; position: absolute; left: 25.2mm; top: 1.3mm; width: 3.2mm; height: 3.2mm; border-radius: 50%; background: var(--pa); border: .7mm solid var(--pc); }
+.pf-tl time { font-size: 9.5pt; color: #555; text-align: right; padding-top: .3mm; }
+.pf-tl .ct { font-weight: 600; color: var(--pc); font-size: 10.5pt; }
+.pf-tl p { margin: .5mm 0; font-size: 10.5pt; line-height: 1.45; }
+.pf-tl small { color: #666; font-size: 8.5pt; }
+/* โมเดิร์น */
+.pf.l-modern { padding: 0; }
+.pf-band { display: flex; align-items: center; gap: 6mm; padding: 11mm 14mm 11mm; color: #fff; position: relative; overflow: hidden;
+  background: linear-gradient(120deg, var(--pc), color-mix(in srgb, var(--pc) 62%, #000)); }
+.pf-band::after { content: ''; position: absolute; right: -18mm; top: -28mm; width: 80mm; height: 80mm; border-radius: 50%; border: 7mm solid color-mix(in srgb, var(--pa) 45%, transparent); }
+.pf-band .pf-photo { border-radius: 50%; width: 34mm; height: 34mm; border: 1.2mm solid #fff; background: rgba(255,255,255,.15); color: #fff; }
+.pf-band .who { flex: 1; min-width: 0; position: relative; z-index: 1; font-size: 11pt; }
+.pf-band .who small { color: var(--pa); font-size: 10.5pt; font-weight: 600; }
+.pf-band .pf-name { color: #fff; font-size: 23pt; margin: 0; }
+.pf-band .lg { width: 19mm; height: 19mm; background: #fff; border-radius: 50%; padding: 1mm; position: relative; z-index: 1; }
+.pf-in { padding: 0 14mm 12mm; display: flex; flex-direction: column; flex: 1; }
+.l-modern .pf-sum { margin-top: -5mm; position: relative; z-index: 2; }
+.l-modern .pf-sum > div { background: #fff; border: 0; box-shadow: 0 .8mm 3mm rgba(0,0,0,.14); }
+.pf-cols { display: grid; grid-template-columns: 58mm minmax(0, 1fr); gap: 6mm; margin-top: 2mm; }
+.pf-cols aside { background: color-mix(in srgb, var(--pc) 6%, #fff); border-radius: 3mm; padding: 1mm 4mm 4mm; font-size: 10pt; align-self: start; }
+.pf-cols aside .pf-chart .cr { grid-template-columns: 1fr 7mm; gap: .4mm 2mm; margin-bottom: 1.6mm; }
+.pf-cols aside .pf-chart .cr span { grid-column: 1 / -1; font-size: 9pt; }
+.pf-cols aside .kvbox { margin-top: 4mm; } .pf-cols aside .kv { font-size: 9.5pt; }
+.pf-cols aside .pf-qr { margin-top: 4mm; }
+.pf-cols main { min-width: 0; } .pf-cols main table { font-size: 9pt; }
+.l-modern .p-sign { width: 75mm; }
+/* มินิมอล */
+.l-minimal .pf-top { border-bottom: .4mm solid var(--pc); padding-bottom: 5mm; }
+.l-minimal .pf-name { font-size: 26pt; color: var(--pc); font-weight: 600; margin: 0; }
+.l-minimal .sub { font-size: 11pt; color: #777; margin-bottom: 2.5mm; }
+.l-minimal .pf-photo { border-radius: 50%; width: 34mm; height: 34mm; border: 0; }
+.l-minimal .pf-sum > div { background: none; border: 0; border-left: .8mm solid var(--pa); border-radius: 0; text-align: left; }
+.l-minimal .pf-sum .md { justify-content: flex-start; }
+.l-minimal th { background: none; color: var(--pc); border-bottom: .5mm solid var(--pc); }
+.l-minimal tbody tr:nth-child(even) td { background: none; }
+.l-minimal h2::before { display: none; }
+.l-minimal h2 { border-bottom: .2mm solid #DDD; padding-bottom: 1mm; }
+.pf-mark { text-align: center; font-size: 8.5pt; color: #999; margin-top: 2mm; }
+
+/* หน้าจอออกแบบ Portfolio */
+.pf-editor { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 26px; align-items: start; }
+.pf-prev-wrap { position: sticky; top: 92px; }
+.pf-pick { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pf-thumb { display: block; aspect-ratio: 210 / 297; border-radius: 8px; border: 3px solid var(--line); margin-bottom: 4px; position: relative; overflow: hidden; background: #fff; }
+.tpl input:checked + .pf-thumb { border-color: var(--maroon); box-shadow: 0 0 0 3px rgba(139,30,36,.2); }
+.tpl input:focus-visible + .pf-thumb { outline: 3px solid var(--gold); }
+.pf-thumb i, .pf-thumb b, .pf-thumb u { position: absolute; display: block; }
+.pf-thumb u { left: 12%; right: 12%; top: 48%; height: 40%; background: repeating-linear-gradient(#CCD2DD 0 2px, transparent 2px 8px); }
+.pf-thumb.l-classic i { left: 10%; right: 10%; top: 7%; height: 4%; background: var(--maroon); box-shadow: 0 5px 0 -1px var(--gold); }
+.pf-thumb.l-classic b { left: 12%; top: 20%; width: 24%; height: 18%; background: var(--maroon-l); border: 2px solid var(--gold); }
+.pf-thumb.l-modern i { left: 0; right: 0; top: 0; height: 25%; background: linear-gradient(120deg, var(--maroon), #4E0F13); }
+.pf-thumb.l-modern b { left: 10%; top: 6%; width: 28%; aspect-ratio: 1; border-radius: 50%; background: #fff; opacity: .85; }
+.pf-thumb.l-modern u { left: 46%; }
+.pf-thumb.l-timeline i { left: 10%; right: 10%; top: 7%; height: 4%; background: var(--navy); }
+.pf-thumb.l-timeline b { left: 30%; top: 30%; bottom: 8%; width: 2px; background: var(--navy); }
+.pf-thumb.l-timeline u { left: 26%; width: 10%; right: auto; top: 30%; height: 62%; background: radial-gradient(circle, var(--gold) 3px, transparent 4px) 50% 0 / 100% 20%; }
+.pf-thumb.l-minimal i { left: 12%; top: 10%; width: 52%; height: 5%; background: #3A3F4B; border-radius: 2px; }
+.pf-thumb.l-minimal b { left: 12%; right: 12%; top: 24%; height: 2px; background: var(--maroon); }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatches label { position: relative; cursor: pointer; }
+.swatches input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.swatches span { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--sw); border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+.swatches input:checked + span { box-shadow: 0 0 0 3px var(--navy); }
+.swatches input:focus-visible + span { outline: 3px solid var(--gold); }
+.swatches .custom span { background: conic-gradient(#E53935, #FDD835, #43A047, #1E88E5, #8E24AA, #E53935); color: #fff; }
+.swatches .custom .ic { filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+.chks { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.chk { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; font-weight: 500; }
+.chk input { width: 20px; height: 20px; accent-color: var(--maroon); }
+.pf-up { cursor: pointer; }
+@media (max-width: 960px) { .pf-editor { grid-template-columns: minmax(0, 1fr); } .pf-prev-wrap { position: static; } }
+@media (max-width: 640px) { .pf-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ===================== บัตร QR นักศึกษา (10 ใบ / A4) ===================== */
 .card-page { width: 210mm; height: 297mm; padding: 10mm 12mm; display: grid; grid-template-columns: repeat(2, 88mm); grid-auto-rows: 53mm;

@@ -66,7 +66,7 @@ var TLD = (function () {
 
   // โครงสร้างตาราง (ชื่อคอลัมน์ใน Google Sheets)
   var SCHEMA = {
-    users: ['id', 'name', 'role', 'dept', 'level', 'advisorId', 'passHash', 'active', 'createdAt', 'qrVer'],
+    users: ['id', 'name', 'role', 'dept', 'level', 'advisorId', 'passHash', 'active', 'createdAt', 'qrVer', 'portfolio'],
     deeds: ['id', 'studentId', 'studentName', 'dept', 'level', 'date', 'category', 'points', 'detail', 'impact',
             'learned', 'imageUrl', 'status', 'recordedById', 'recordedByName', 'reviewNote', 'reviewedBy',
             'createdAt', 'updatedAt'],
@@ -387,12 +387,22 @@ var TLD = (function () {
           .sort(function (a, b) { return b.points - a.points || b.count - a.count; }).slice(0, 5)
           .map(function (s) { return { id: s.id, name: s.name, dept: s.dept, level: s.level, points: s.points, count: s.count, medal: s.medal }; });
         var agg = aggregate(approved);
+        // จัดอันดับแผนกวิชา: แต้มรวม / จำนวนครั้ง / ผู้เข้าร่วม / จำนวนเหรียญ
+        var rank = {};
+        Object.keys(agg.dept).forEach(function (n) { if (n) rank[n] = { name: n, points: agg.dept[n].points, count: agg.dept[n].count, people: 0, members: 0, medals: 0 }; });
+        studs.forEach(function (s) {
+          var r = rank[s.dept]; if (!r) return;
+          r.members++; if (s.count) r.people++; r.medals += unlockedMedals(s.points).length;
+        });
+        var deptRank = Object.keys(rank).map(function (k) { return rank[k]; })
+          .sort(function (a, b) { return b.points - a.points || b.count - a.count || (a.name < b.name ? -1 : 1); });
         return {
           totals: { approved: approved.length, points: total, participants: Object.keys(participants).length, certs: certCounts(studs) },
           top: top,
-          feed: approved.slice().sort(byNewest).slice(0, 60).map(function (d) {
-            var f = feedItem(d); delete f.reviewNote; delete f.studentId; return f;
+          feed: approved.slice().sort(byNewest).slice(0, 6).map(function (d) {
+            var f = feedItem(d); delete f.reviewNote; delete f.studentId; delete f.impact; delete f.learned; return f;
           }),
+          deptRank: deptRank,
           dept: agg.dept, cat: agg.cat
         };
       },
@@ -603,12 +613,40 @@ var TLD = (function () {
           deeds: deeds().filter(function (d) { return d.studentId === s.id && d.status === 'approved'; })
             .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }).map(feedItem),
           certs: unlockedMedals(v.points).map(function (m) { return { medal: m.key, code: certCode(secret, s.id, m.key) }; }),
-          portfolioCode: portCode(secret, s.id, ymd)
+          portfolioCode: portCode(secret, s.id, ymd),
+          portfolio: portfolioOf(s)
         };
+      },
+
+      // นักศึกษาออกแบบธีม E-Portfolio ของตนเอง
+      savePortfolio: function (p) {
+        var u = auth(p, ['student']);
+        var t = p.theme || {}, old = portfolioOf(u);
+        var out = {
+          layout: PF_LAYOUTS.indexOf(t.layout) >= 0 ? t.layout : 'classic',
+          color: /^#[0-9a-fA-F]{6}$/.test(str(t.color)) ? str(t.color) : '#8B1E24',
+          accent: /^#[0-9a-fA-F]{6}$/.test(str(t.accent)) ? str(t.accent) : '#D99B26',
+          font: t.font === 'sarabun' ? 'sarabun' : 'kanit',
+          title: str(t.title, 80),
+          about: str(t.about, 400),
+          goal: str(t.goal, 160),
+          showChart: t.showChart !== false, showSign: t.showSign !== false, showPhoto: t.showPhoto !== false,
+          photo: old.photo || ''
+        };
+        if (t.photo === '') out.photo = '';
+        else if (t.photo && String(t.photo).indexOf('data:image') === 0) {
+          if (String(t.photo).length > 700000) fail('รูปภาพมีขนาดใหญ่เกินไป');
+          out.photo = env.saveImage(t.photo, 'profile_' + u.id + '_' + Date.now());
+        }
+        db.update('users', u.id, { portfolio: JSON.stringify(out) });
+        return out;
       }
     };
 
-    var WRITES = ['register', 'changePassword', 'submitDeed', 'award', 'review', 'saveUser', 'saveSettings', 'importUsers', 'resetQr'];
+    var PF_LAYOUTS = ['classic', 'modern', 'timeline', 'minimal'];
+    function portfolioOf(u) { try { return JSON.parse(u.portfolio || '{}') || {}; } catch (e) { return {}; } }
+
+    var WRITES = ['register', 'changePassword', 'submitDeed', 'award', 'review', 'saveUser', 'saveSettings', 'importUsers', 'resetQr', 'savePortfolio'];
 
     function handle(p) {
       p = p || {};
