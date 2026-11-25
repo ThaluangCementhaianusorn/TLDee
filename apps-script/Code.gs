@@ -12,27 +12,53 @@ var TLD = (function () {
   var APP_NAME = 'คนดีศรีท่าหลวง';
   var APP_SLOGAN = 'ทำดีมีเกียรติ';
 
-  // หมวดหมู่ความดีและค่าคะแนน (5 ด้าน)
+  // หมวดหมู่ความดีและค่าคะแนน (5 ด้าน) — icon = ชื่อไอคอน SVG ใน app.js
   var CATEGORIES = [
-    { id: 'fame',       name: 'สร้างชื่อเสียงและคุณประโยชน์แก่สถาบัน', short: 'สร้างชื่อเสียง', points: 3, icon: '🏆', color: '#D99B26' },
-    { id: 'honest',     name: 'ความซื่อสัตย์สุจริต (เก็บของได้ส่งคืน)', short: 'ซื่อสัตย์สุจริต', points: 2, icon: '🤝', color: '#14244B' },
-    { id: 'volunteer',  name: 'จิตอาสาพัฒนาวิทยาลัยและชุมชน',        short: 'จิตอาสา',        points: 2, icon: '🌱', color: '#2E7D4F' },
-    { id: 'grateful',   name: 'ความกตัญญูและช่วยเหลือผู้อื่น',          short: 'กตัญญู/ช่วยเหลือ', points: 1, icon: '💗', color: '#8B1E24' },
-    { id: 'discipline', name: 'รักษาระเบียบวินัยและสิ่งแวดล้อม',        short: 'วินัย/สิ่งแวดล้อม', points: 1, icon: '♻️', color: '#3A7CA5' }
+    { id: 'fame',       name: 'สร้างชื่อเสียงและคุณประโยชน์แก่สถาบัน', short: 'สร้างชื่อเสียง',     points: 3, icon: 'trophy', color: '#C28411' },
+    { id: 'honest',     name: 'ความซื่อสัตย์สุจริต (เก็บของได้ส่งคืน)', short: 'ซื่อสัตย์สุจริต',    points: 2, icon: 'gem',    color: '#22396F' },
+    { id: 'volunteer',  name: 'จิตอาสาพัฒนาวิทยาลัยและชุมชน',        short: 'จิตอาสา',          points: 2, icon: 'sprout', color: '#1E7F48' },
+    { id: 'grateful',   name: 'ความกตัญญูและช่วยเหลือผู้อื่น',          short: 'กตัญญู/ช่วยเหลือ',   points: 1, icon: 'heart',  color: '#8B1E24' },
+    { id: 'discipline', name: 'รักษาระเบียบวินัยและสิ่งแวดล้อม',        short: 'วินัย/สิ่งแวดล้อม',  points: 1, icon: 'leaf',   color: '#2F7FA3' }
   ];
 
-  // แผนกวิชา 9 แผนก (แก้ไขชื่อได้ตามจริงของวิทยาลัย)
-  var DEPTS = [
+  // แผนกวิชาเริ่มต้น (ผู้ดูแลระบบเพิ่ม/แก้ไขได้ในเมนู ตั้งค่าระบบ)
+  var DEFAULT_DEPTS = [
     'ช่างยนต์', 'ช่างกลโรงงาน', 'ช่างเชื่อมโลหะ', 'ช่างไฟฟ้ากำลัง', 'ช่างอิเล็กทรอนิกส์',
     'ช่างก่อสร้าง', 'เมคคาทรอนิกส์และหุ่นยนต์', 'การบัญชี', 'เทคโนโลยีธุรกิจดิจิทัล'
   ];
+  var DEPTS = DEFAULT_DEPTS.slice();
 
   var LEVELS = ['ปวช.1', 'ปวช.2', 'ปวช.3', 'ปวส.1', 'ปวส.2'];
 
+  // เกณฑ์เหรียญเริ่มต้น (ปรับได้ในเมนู ตั้งค่าระบบ)
+  var DEFAULT_MINS = { bronze: 40, silver: 60, gold: 80 };
   var MEDALS = [
-    { key: 'bronze', code: 'B', name: 'เหรียญทองแดง', full: 'ระดับเหรียญทองแดง', min: 5,  title: 'ผู้มีความประพฤติดี มีจิตอาสา' },
-    { key: 'silver', code: 'S', name: 'เหรียญเงิน',   full: 'ระดับเหรียญเงิน',   min: 10, title: 'แบบอย่างที่ดีด้านคุณธรรมจริยธรรม' },
-    { key: 'gold',   code: 'G', name: 'เหรียญทอง',    full: 'ระดับเหรียญทอง (คนดีศรีท่าหลวง)', min: 15, title: 'สุดยอดเยาวชนต้นแบบ ทำดีมีเกียรติ' }
+    { key: 'bronze', code: 'B', name: 'เหรียญทองแดง', full: 'ระดับเหรียญทองแดง', min: 40, title: 'ผู้มีความประพฤติดี มีจิตอาสา' },
+    { key: 'silver', code: 'S', name: 'เหรียญเงิน',   full: 'ระดับเหรียญเงิน',   min: 60, title: 'แบบอย่างที่ดีด้านคุณธรรมจริยธรรม' },
+    { key: 'gold',   code: 'G', name: 'เหรียญทอง',    full: 'ระดับเหรียญทอง (คนดีศรีท่าหลวง)', min: 80, title: 'สุดยอดเยาวชนต้นแบบ ทำดีมีเกียรติ' }
+  ];
+
+  // ค่าเริ่มต้นของเกียรติบัตร (แก้ไขได้ในเมนู ตั้งค่าระบบ > เกียรติบัตร)
+  var DEFAULT_CERT = {
+    template: 'classic',
+    title: 'เกียรติบัตร',
+    subtitle: 'โครงการคนดีศรีท่าหลวง “ทำดีมีเกียรติ”',
+    intro: 'ขอมอบเกียรติบัตรฉบับนี้ไว้เพื่อแสดงว่า',
+    body: 'นักเรียน/นักศึกษาระดับชั้น {level} แผนกวิชา{dept}',
+    achievement: 'ได้รับรางวัล {medal}',
+    reason: 'สะสมแต้มความดีครบ {min} แต้ม เป็น “{title}”',
+    blessing: 'ขอให้มีความสุข ความเจริญ และเป็นแบบอย่างที่ดีสืบไป',
+    directorName: '',
+    directorTitle: 'ผู้อำนวยการวิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์',
+    signature: '',
+    showQr: true
+  };
+  var CERT_FIELDS = Object.keys(DEFAULT_CERT);
+  var TEMPLATES = [
+    { id: 'classic', name: 'คลาสสิก ทอง-แดง' },
+    { id: 'royal',   name: 'ราชพฤกษ์ น้ำเงิน-ทอง' },
+    { id: 'modern',  name: 'โมเดิร์น แถบสี' },
+    { id: 'thai',    name: 'ลายไทยประยุกต์' }
   ];
 
   var ROLES = { student: 'นักเรียน/นักศึกษา', teacher: 'ครูที่ปรึกษา/ครูผู้สอน', admin: 'ผู้ดูแลระบบ/ผู้บริหาร' };
@@ -40,10 +66,11 @@ var TLD = (function () {
 
   // โครงสร้างตาราง (ชื่อคอลัมน์ใน Google Sheets)
   var SCHEMA = {
-    users: ['id', 'name', 'role', 'dept', 'level', 'advisorId', 'passHash', 'active', 'createdAt'],
+    users: ['id', 'name', 'role', 'dept', 'level', 'advisorId', 'passHash', 'active', 'createdAt', 'qrVer'],
     deeds: ['id', 'studentId', 'studentName', 'dept', 'level', 'date', 'category', 'points', 'detail', 'impact',
             'learned', 'imageUrl', 'status', 'recordedById', 'recordedByName', 'reviewNote', 'reviewedBy',
-            'createdAt', 'updatedAt']
+            'createdAt', 'updatedAt'],
+    settings: ['id', 'value', 'updatedAt']
   };
 
   /* ---------------- SHA-256 (pure JS ใช้ได้ทั้งเบราว์เซอร์และ Apps Script) ---------------- */
@@ -99,16 +126,32 @@ var TLD = (function () {
   function portCode(secret, studentId, ymd) {
     return 'TLC-PORT-' + studentId + '-' + ymd + '-' + sign(secret, 'PORT|' + studentId + '|' + ymd);
   }
+  function qrSig(secret, id, ver) { return sha256(secret + '|QR|' + String(id).toLowerCase() + '|' + (ver || '0')).slice(0, 12); }
   function ymdNow() { var d = new Date(); return d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2); }
   function newId(prefix) { return prefix + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 46656).toString(36).toUpperCase(); }
   function str(v, max) { v = (v === null || v === undefined) ? '' : String(v).trim(); return max ? v.slice(0, max) : v; }
 
+  // นำการตั้งค่า (แผนกวิชา / เกณฑ์เหรียญ) มาใช้กับตัวแปรส่วนกลาง
+  function applySettings(s) {
+    s = s || {};
+    var d = (s.depts && s.depts.length) ? s.depts : DEFAULT_DEPTS;
+    DEPTS.splice.apply(DEPTS, [0, DEPTS.length].concat(d));
+    var mins = s.medals || DEFAULT_MINS;
+    MEDALS.forEach(function (m) { m.min = Number(mins[m.key]) || DEFAULT_MINS[m.key]; });
+  }
+  function certSettings(s) {
+    var c = {}, src = (s && s.cert) || {};
+    CERT_FIELDS.forEach(function (k) { c[k] = src[k] !== undefined ? src[k] : DEFAULT_CERT[k]; });
+    return c;
+  }
+
   /* =====================================================================
    * createApi(db, env)
-   *  db  : { rows(table), insert(table,obj), update(table,id,patch), version(), bump() }
+   *  db  : { rows(table), insert(table,obj), update(table,id,patch), version(), bump(), [bulk(table,inserts,patches)] }
    *  env : { secret(), saveImage(dataUrl, name) -> url }
    * ===================================================================== */
   function createApi(db, env) {
+    var SETTINGS = {};
     function nowIso() { return new Date().toISOString(); }
     function fail(msg) { var e = new Error(msg); e.isApi = true; throw e; }
     function users() { return db.rows('users'); }
@@ -121,6 +164,25 @@ var TLD = (function () {
     }
     function findDeed(id) { var l = deeds(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
     function isActive(u) { return String(u.active) !== '0' && String(u.active).toLowerCase() !== 'false'; }
+
+    function loadSettings() {
+      var s = {};
+      (db.rows('settings') || []).forEach(function (r) { try { s[r.id] = JSON.parse(r.value); } catch (e) {} });
+      SETTINGS = s;
+      applySettings(s);
+      return s;
+    }
+    function setSetting(key, value) {
+      var rows = db.rows('settings'), v = JSON.stringify(value), t = nowIso();
+      for (var i = 0; i < rows.length; i++) if (rows[i].id === key) { db.update('settings', key, { value: v, updatedAt: t }); SETTINGS[key] = value; return; }
+      db.insert('settings', { id: key, value: v, updatedAt: t });
+      SETTINGS[key] = value;
+    }
+    function bulk(table, inserts, patches) {
+      if (db.bulk) return db.bulk(table, inserts, patches);
+      Object.keys(patches).forEach(function (id) { db.update(table, id, patches[id]); });
+      inserts.forEach(function (o) { db.insert(table, o); });
+    }
 
     function makeToken(u) {
       var exp = Date.now() + 7 * 864e5;
@@ -198,6 +260,17 @@ var TLD = (function () {
       return c;
     }
     function validDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s); }
+    function validId(id) { return /^[0-9A-Za-z\-_.]{2,20}$/.test(id); }
+    function resolveAdvisor(v) {
+      v = str(v);
+      if (!v) return '';
+      var t = findUser(v);
+      if (t && t.role !== 'student') return t.id;
+      var list = users();
+      for (var i = 0; i < list.length; i++) if (list[i].role !== 'student' && str(list[i].name) === v) return list[i].id;
+      return null;
+    }
+    function qrItem(u) { return { id: u.id, name: u.name, dept: u.dept, level: u.level, sig: qrSig(env.secret(), u.id, u.qrVer) }; }
 
     var H = {
       version: function () { return { version: db.version() }; },
@@ -205,20 +278,51 @@ var TLD = (function () {
       config: function () {
         return {
           teachers: users().filter(function (u) { return u.role === 'teacher' && isActive(u); })
-            .map(function (u) { return { id: u.id, name: u.name, dept: u.dept }; })
+            .map(function (u) { return { id: u.id, name: u.name, dept: u.dept }; }),
+          depts: DEPTS.slice(),
+          medals: { bronze: medalByKey('bronze').min, silver: medalByKey('silver').min, gold: medalByKey('gold').min },
+          cert: certSettings(SETTINGS)
         };
+      },
+
+      saveSettings: function (p) {
+        auth(p, ['admin']);
+        if (p.depts) {
+          var seen = {}, list = [];
+          p.depts.forEach(function (d) { d = str(d, 80); if (d && !seen[d]) { seen[d] = 1; list.push(d); } });
+          if (!list.length) fail('ต้องมีแผนกวิชาอย่างน้อย 1 แผนก');
+          setSetting('depts', list);
+        }
+        if (p.medals) {
+          var b = Math.round(Number(p.medals.bronze)), s = Math.round(Number(p.medals.silver)), g = Math.round(Number(p.medals.gold));
+          if (!(b > 0 && s > b && g > s)) fail('เกณฑ์แต้มต้องเรียงจากน้อยไปมาก: ทองแดง < เงิน < ทอง');
+          setSetting('medals', { bronze: b, silver: s, gold: g });
+        }
+        if (p.cert) {
+          var cur = certSettings(SETTINGS), c = {};
+          CERT_FIELDS.forEach(function (k) {
+            var v = p.cert[k] !== undefined ? p.cert[k] : cur[k];
+            c[k] = k === 'showQr' ? (v === true || v === 'true' || v === '1') : str(v, k === 'signature' ? 300000 : 400);
+          });
+          if (!TEMPLATES.some(function (t) { return t.id === c.template; })) c.template = 'classic';
+          if (c.signature.indexOf('data:image') === 0) c.signature = env.saveImage(c.signature, 'signature_' + Date.now());
+          setSetting('cert', c);
+        }
+        db.bump();
+        loadSettings();
+        return H.config();
       },
 
       register: function (p) {
         var id = str(p.id, 20), name = str(p.name, 120), pw = String(p.password || '');
-        if (!/^[0-9A-Za-z\-_.]{3,20}$/.test(id)) fail('รหัสนักศึกษาต้องเป็นตัวเลข/อักษรอังกฤษ 3–20 ตัว');
+        if (!validId(id)) fail('รหัสนักศึกษาต้องเป็นตัวเลข/อักษรอังกฤษ 2–20 ตัว');
         if (name.length < 3) fail('กรุณากรอกชื่อ-นามสกุล');
         if (pw.length < 4) fail('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
         if (DEPTS.indexOf(p.dept) < 0) fail('กรุณาเลือกแผนกวิชา');
         if (LEVELS.indexOf(p.level) < 0) fail('กรุณาเลือกระดับชั้น');
         if (findUser(id)) fail('รหัสนี้ลงทะเบียนแล้ว หากลืมรหัสผ่านโปรดติดต่อครูที่ปรึกษา');
         var u = { id: id, name: name, role: 'student', dept: p.dept, level: p.level, advisorId: str(p.advisorId, 20),
-                  passHash: hashPassword(id, pw), active: '1', createdAt: nowIso() };
+                  passHash: hashPassword(id, pw), active: '1', createdAt: nowIso(), qrVer: '0' };
         db.insert('users', u); db.bump();
         return { token: makeToken(u), user: publicUser(u) };
       },
@@ -228,6 +332,31 @@ var TLD = (function () {
         if (!u || u.passHash !== hashPassword(u.id, String(p.password || ''))) fail('รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         if (!isActive(u)) fail('บัญชีนี้ถูกระงับการใช้งาน');
         return { token: makeToken(u), user: publicUser(u) };
+      },
+
+      qrLogin: function (p) {
+        var u = findUser(p.id);
+        if (!u || u.role !== 'student' || qrSig(env.secret(), u.id, u.qrVer) !== str(p.sig).toLowerCase()) fail('QR Code ไม่ถูกต้องหรือถูกยกเลิกแล้ว');
+        if (!isActive(u)) fail('บัญชีนี้ถูกระงับการใช้งาน');
+        return { token: makeToken(u), user: publicUser(u) };
+      },
+
+      qrCodes: function (p) {
+        var u = auth(p);
+        if (u.role === 'student') return [qrItem(u)];
+        var ids = p.ids ? p.ids.map(function (x) { return String(x).toLowerCase(); }) : null;
+        return users().filter(function (s) {
+          return s.role === 'student' && isActive(s) && (!ids || ids.indexOf(String(s.id).toLowerCase()) >= 0);
+        }).map(qrItem);
+      },
+
+      resetQr: function (p) {
+        auth(p, ['admin']);
+        var s = findUser(p.id);
+        if (!s || s.role !== 'student') fail('ไม่พบนักศึกษา');
+        db.update('users', s.id, { qrVer: String(Number(s.qrVer || 0) + 1) });
+        db.bump();
+        return qrItem(findUser(s.id));
       },
 
       me: function (p) {
@@ -273,19 +402,15 @@ var TLD = (function () {
         var parts = code.split('-');
         if (parts.length < 5 || parts[0] !== 'TLC') return { valid: false, code: code };
         var secret = env.secret();
-        var all = users();
-        function findCaseless(id) { id = id.toLowerCase(); for (var i = 0; i < all.length; i++) if (String(all[i].id).toLowerCase() === id) return all[i]; return null; }
         if (parts[1] === 'CERT') {
-          var mcode = parts[2], sid = parts.slice(3, -1).join('-');
-          var stu = findCaseless(sid), m = medalByKey(mcode);
+          var stu = findUser(parts.slice(3, -1).join('-')), m = medalByKey(parts[2]);
           if (!stu || !m || certCode(secret, stu.id, m.key).toUpperCase() !== code) return { valid: false, code: code };
           var pts = pointsMap()[stu.id] || 0;
           return { valid: pts >= m.min, revoked: pts < m.min, type: 'cert', code: code, name: stu.name, dept: stu.dept,
                    level: stu.level, medal: m.key, points: pts };
         }
         if (parts[1] === 'PORT') {
-          var ymd = parts[parts.length - 2], sid2 = parts.slice(2, -2).join('-');
-          var st2 = findCaseless(sid2);
+          var ymd = parts[parts.length - 2], st2 = findUser(parts.slice(2, -2).join('-'));
           if (!st2 || portCode(secret, st2.id, ymd).toUpperCase() !== code) return { valid: false, code: code };
           var pts2 = pointsMap()[st2.id] || 0, md = medalOf(pts2);
           return { valid: true, type: 'port', code: code, name: st2.name, dept: st2.dept, level: st2.level,
@@ -406,7 +531,7 @@ var TLD = (function () {
       saveUser: function (p) {
         auth(p, ['admin']);
         var id = str(p.id, 20);
-        if (!/^[0-9A-Za-z\-_.]{3,20}$/.test(id)) fail('รหัสผู้ใช้ต้องเป็นตัวเลข/อักษรอังกฤษ 3–20 ตัว');
+        if (!validId(id)) fail('รหัสผู้ใช้ต้องเป็นตัวเลข/อักษรอังกฤษ 2–20 ตัว');
         if (!ROLES[p.role]) fail('กรุณาเลือกบทบาท');
         var ex = findUser(id);
         var data = { name: str(p.name, 120), role: p.role, dept: str(p.dept, 80), level: str(p.level, 20),
@@ -421,11 +546,49 @@ var TLD = (function () {
           db.update('users', ex.id, data);
         } else {
           if (!data.passHash) fail('กรุณากำหนดรหัสผ่าน');
-          data.id = id; data.createdAt = nowIso();
+          data.id = id; data.createdAt = nowIso(); data.qrVer = '0';
           db.insert('users', data);
         }
         db.bump();
         return { done: true };
+      },
+
+      // นำเข้ารายชื่อนักเรียน/ครู ทีละหลายคน  rows: [{id,name,dept,level,advisor,password}]
+      importUsers: function (p) {
+        auth(p, ['admin']);
+        var role = p.role === 'teacher' ? 'teacher' : 'student';
+        var rows = p.rows || [];
+        if (rows.length > 1000) fail('นำเข้าได้ครั้งละไม่เกิน 1,000 รายการ');
+        var inserts = [], patches = {}, errors = [], added = 0, updated = 0, newDepts = [], seen = {}, now = nowIso();
+        rows.forEach(function (r, i) {
+          var id = str(r.id, 20), name = str(r.name, 120), dept = str(r.dept, 80), level = str(r.level, 20);
+          var line = (r.line || i + 1);
+          if (!validId(id)) return errors.push({ line: line, msg: 'รหัส "' + id + '" ไม่ถูกต้อง' });
+          if (seen[id.toLowerCase()]) return errors.push({ line: line, msg: 'รหัส ' + id + ' ซ้ำในไฟล์' });
+          seen[id.toLowerCase()] = 1;
+          if (name.length < 2) return errors.push({ line: line, msg: 'ไม่มีชื่อ-สกุล' });
+          if (level && LEVELS.indexOf(level) < 0) return errors.push({ line: line, msg: 'ระดับชั้น "' + level + '" ไม่ถูกต้อง (ใช้ ปวช.1–ปวส.2)' });
+          if (role === 'student' && !level) return errors.push({ line: line, msg: 'ไม่ได้ระบุระดับชั้น' });
+          var adv = resolveAdvisor(r.advisor);
+          if (adv === null) return errors.push({ line: line, msg: 'ไม่พบครูที่ปรึกษา "' + r.advisor + '"' });
+          if (dept && DEPTS.indexOf(dept) < 0 && newDepts.indexOf(dept) < 0) newDepts.push(dept);
+          var ex = findUser(id);
+          if (ex) {
+            if (ex.role !== role) return errors.push({ line: line, msg: 'รหัส ' + id + ' เป็นบัญชีบทบาทอื่นอยู่แล้ว' });
+            var patch = { name: name, dept: dept || ex.dept, level: level || ex.level, advisorId: adv || ex.advisorId, active: '1' };
+            if (r.password) patch.passHash = hashPassword(ex.id, r.password);
+            patches[ex.id] = patch; updated++;
+          } else {
+            inserts.push({ id: id, name: name, role: role, dept: dept, level: role === 'student' ? level : '', advisorId: role === 'student' ? (adv || '') : '',
+              passHash: hashPassword(id, str(r.password) || id), active: '1', createdAt: now, qrVer: '0' });
+            added++;
+          }
+        });
+        if (newDepts.length) setSetting('depts', DEPTS.concat(newDepts));
+        if (inserts.length || Object.keys(patches).length) bulk('users', inserts, patches);
+        db.bump();
+        loadSettings();
+        return { added: added, updated: updated, errors: errors, newDepts: newDepts };
       },
 
       studentReport: function (p) {
@@ -445,13 +608,14 @@ var TLD = (function () {
       }
     };
 
-    var WRITES = ['register', 'changePassword', 'submitDeed', 'award', 'review', 'saveUser'];
+    var WRITES = ['register', 'changePassword', 'submitDeed', 'award', 'review', 'saveUser', 'saveSettings', 'importUsers', 'resetQr'];
 
     function handle(p) {
       p = p || {};
       var fn = H[p.action];
       if (!fn) return { ok: false, error: 'ไม่รู้จักคำสั่ง: ' + p.action };
       try {
+        loadSettings();
         var data = fn(p);
         return { ok: true, data: data, version: db.version() };
       } catch (e) {
@@ -463,9 +627,10 @@ var TLD = (function () {
 
   return {
     COLLEGE: COLLEGE, APP_NAME: APP_NAME, APP_SLOGAN: APP_SLOGAN, CATEGORIES: CATEGORIES, DEPTS: DEPTS,
-    LEVELS: LEVELS, MEDALS: MEDALS, ROLES: ROLES, STATUS: STATUS, SCHEMA: SCHEMA,
-    sha256: sha256, hashPassword: hashPassword, catById: catById, medalByKey: medalByKey, medalOf: medalOf,
-    nextMedal: nextMedal, unlockedMedals: unlockedMedals, createApi: createApi, newId: newId
+    LEVELS: LEVELS, MEDALS: MEDALS, ROLES: ROLES, STATUS: STATUS, SCHEMA: SCHEMA, TEMPLATES: TEMPLATES,
+    DEFAULT_CERT: DEFAULT_CERT, sha256: sha256, hashPassword: hashPassword, catById: catById, medalByKey: medalByKey,
+    medalOf: medalOf, nextMedal: nextMedal, unlockedMedals: unlockedMedals, applySettings: applySettings,
+    certSettings: certSettings, createApi: createApi, newId: newId
   };
 })();
 
@@ -476,7 +641,7 @@ var TLD = (function () {
  * วิธีติดตั้ง: ดู README.md หัวข้อ "เชื่อมต่อ Google Sheets"
  * ===================================================================== */
 
-var SHEET_NAMES = { users: 'Users', deeds: 'Deeds' };
+var SHEET_NAMES = { users: 'Users', deeds: 'Deeds', settings: 'Settings' };
 
 function props_() { return PropertiesService.getScriptProperties(); }
 
@@ -495,9 +660,18 @@ function sheet_(table) {
     sh.getRange(1, 1, 1, cols.length).setValues([cols])
       .setFontWeight('bold').setBackground('#14244B').setFontColor('#FFFFFF');
     sh.setFrozenRows(1);
+  } else if (!sheet_.checked[table]) {
+    var colsNow = TLD.SCHEMA[table];                        // เพิ่มคอลัมน์ใหม่อัตโนมัติเมื่อระบบอัปเดต
+    if (sh.getLastColumn() < colsNow.length) {
+      sh.getRange(1, 1, 1, colsNow.length).setValues([colsNow])
+        .setFontWeight('bold').setBackground('#14244B').setFontColor('#FFFFFF');
+      sh.getRange('A:Z').setNumberFormat('@');
+    }
   }
+  sheet_.checked[table] = true;
   return sh;
 }
+sheet_.checked = {};
 
 /* ---------- ฐานข้อมูลบน Google Sheets ---------- */
 function SheetDB() { this.cache = {}; }
@@ -534,6 +708,17 @@ SheetDB.prototype.update = function (table, id, patch) {
     }
   }
 };
+// เขียนหลายแถวพร้อมกัน (ใช้ตอนนำเข้ารายชื่อ) — เร็วกว่าการเขียนทีละแถวมาก
+SheetDB.prototype.bulk = function (table, inserts, patches) {
+  var list = this.rows(table), cols = TLD.SCHEMA[table], sh = sheet_(table);
+  list.forEach(function (o) { var p = patches[o.id]; if (p) for (var k in p) o[k] = p[k]; });
+  var start = list.length ? list[list.length - 1]._row + 1 : 2;
+  inserts.forEach(function (o, i) { o._row = start + i; list.push(o); });
+  var toRow = function (o) { return cols.map(function (c) { return o[c] === undefined || o[c] === null ? '' : String(o[c]); }); };
+  var changed = list.filter(function (o) { return patches[o.id]; });
+  changed.forEach(function (o) { sh.getRange(o._row, 1, 1, cols.length).setValues([toRow(o)]); });
+  if (inserts.length) sh.getRange(start, 1, inserts.length, cols.length).setNumberFormat('@').setValues(inserts.map(toRow));
+};
 SheetDB.prototype.version = function () { return props_().getProperty('VERSION') || '0'; };
 SheetDB.prototype.bump = function () { props_().setProperty('VERSION', String(Date.now())); };
 
@@ -554,7 +739,7 @@ function folder_() {
 function saveImage_(dataUrl, name) {
   var m = String(dataUrl).match(/^data:(image\/[a-z+]+);base64,(.+)$/);
   if (!m) return '';
-  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], name + '.jpg');
+  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], name + (m[1] === 'image/png' ? '.png' : '.jpg'));
   var file = folder_().createFile(blob);
   try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
   return 'https://lh3.googleusercontent.com/d/' + file.getId();
@@ -595,13 +780,13 @@ function doPost(e) {
 function setup() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (ss) props_().setProperty('SHEET_ID', ss.getId());
-  sheet_('users'); sheet_('deeds');
+  sheet_('users'); sheet_('deeds'); sheet_('settings');
   secret_(); folder_();
   var db = new SheetDB();
   var hasAdmin = db.rows('users').some(function (u) { return u.role === 'admin'; });
   if (!hasAdmin) {
     db.insert('users', { id: 'admin', name: 'ผู้ดูแลระบบ', role: 'admin', dept: '', level: '', advisorId: '',
-      passHash: TLD.hashPassword('admin', 'admin1234'), active: '1', createdAt: new Date().toISOString() });
+      passHash: TLD.hashPassword('admin', 'admin1234'), active: '1', createdAt: new Date().toISOString(), qrVer: '0' });
   }
   var first = ss && ss.getSheetByName('Sheet1') || ss && ss.getSheetByName('ชีต1');
   if (first && ss.getSheets().length > 1 && first.getLastRow() === 0) ss.deleteSheet(first);

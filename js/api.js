@@ -1,12 +1,13 @@
 /* ชั้นติดต่อข้อมูล: Google Apps Script (ออนไลน์) หรือ LocalStorage (โหมดสาธิต) */
 (function () {
   'use strict';
-  var KEY = 'tldee_demo_db_v1';
+  var KEY = 'tldee_demo_db_v2';
 
   function LocalDB() {
     var raw = null;
     try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
-    this.data = raw || { users: [], deeds: [], version: '0', secret: TLD.sha256(Math.random() + '|' + Date.now()) };
+    this.data = raw || { users: [], deeds: [], settings: [], version: '0', secret: TLD.sha256(Math.random() + '|' + Date.now()) };
+    if (!this.data.settings) this.data.settings = [];
     if (!raw) this.seed();
   }
   LocalDB.prototype.save = function () {
@@ -26,7 +27,7 @@
     var now = new Date().toISOString(), self = this;
     function user(id, name, role, dept, level, adv, pw) {
       self.data.users.push({ id: id, name: name, role: role, dept: dept || '', level: level || '', advisorId: adv || '',
-        passHash: TLD.hashPassword(id, pw), active: '1', createdAt: now });
+        passHash: TLD.hashPassword(id, pw), active: '1', createdAt: now, qrVer: '0' });
     }
     user('admin', 'ผู้ดูแลระบบ', 'admin', '', '', '', 'admin1234');
     user('T001', 'ครูสมศรี ใจดี', 'teacher', 'ช่างยนต์', '', '', '1234');
@@ -56,6 +57,24 @@
         date: d.slice(0, 10), category: c.id, points: c.points, detail: a[2], impact: '', learned: '', imageUrl: '',
         status: 'approved', recordedById: i % 3 === 0 ? s.advisorId : '', recordedByName: i % 3 === 0 ? users[s.advisorId].name : '',
         reviewNote: '', reviewedBy: 'ผู้ดูแลระบบ', createdAt: d, updatedAt: d });
+    });
+    // เติมข้อมูลตัวอย่างให้ถึงเกณฑ์เหรียญ 40 / 60 / 80 แต้ม
+    var target = { '66001': 84, '66002': 63, '66003': 44, '66005': 30, '66006': 12 };
+    var extra = ['ช่วยงานกิจกรรมหน้าเสาธง', 'ร่วมพัฒนาพื้นที่ส่วนกลางของวิทยาลัย', 'ช่วยเหลือครูจัดเตรียมห้องปฏิบัติการ',
+                 'ร่วมกิจกรรมจิตอาสาวันสำคัญ', 'ช่วยดูแลความสะอาดอาคารเรียน'];
+    var k = 0;
+    Object.keys(target).forEach(function (sid) {
+      var s = users[sid], pts = 0;
+      self.data.deeds.forEach(function (d) { if (d.studentId === sid) pts += d.points; });
+      while (pts < target[sid]) {
+        var c = TLD.CATEGORIES[k % TLD.CATEGORIES.length];
+        var d = new Date(Date.now() - (60 + k) * 86400000).toISOString();
+        self.data.deeds.push({ id: 'DEMOX' + k, studentId: sid, studentName: s.name, dept: s.dept, level: s.level,
+          date: d.slice(0, 10), category: c.id, points: c.points, detail: extra[k % extra.length], impact: '', learned: '', imageUrl: '',
+          status: 'approved', recordedById: s.advisorId, recordedByName: users[s.advisorId].name, reviewNote: '', reviewedBy: users[s.advisorId].name,
+          createdAt: d, updatedAt: d });
+        pts += c.points; k++;
+      }
     });
     this.data.deeds.push({ id: 'DEMOP', studentId: '66004', studentName: users['66004'].name, dept: users['66004'].dept,
       level: users['66004'].level, date: now.slice(0, 10), category: 'volunteer', points: 2,

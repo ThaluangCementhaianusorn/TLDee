@@ -3,7 +3,7 @@
  * วิธีติดตั้ง: ดู README.md หัวข้อ "เชื่อมต่อ Google Sheets"
  * ===================================================================== */
 
-var SHEET_NAMES = { users: 'Users', deeds: 'Deeds' };
+var SHEET_NAMES = { users: 'Users', deeds: 'Deeds', settings: 'Settings' };
 
 function props_() { return PropertiesService.getScriptProperties(); }
 
@@ -22,9 +22,18 @@ function sheet_(table) {
     sh.getRange(1, 1, 1, cols.length).setValues([cols])
       .setFontWeight('bold').setBackground('#14244B').setFontColor('#FFFFFF');
     sh.setFrozenRows(1);
+  } else if (!sheet_.checked[table]) {
+    var colsNow = TLD.SCHEMA[table];                        // เพิ่มคอลัมน์ใหม่อัตโนมัติเมื่อระบบอัปเดต
+    if (sh.getLastColumn() < colsNow.length) {
+      sh.getRange(1, 1, 1, colsNow.length).setValues([colsNow])
+        .setFontWeight('bold').setBackground('#14244B').setFontColor('#FFFFFF');
+      sh.getRange('A:Z').setNumberFormat('@');
+    }
   }
+  sheet_.checked[table] = true;
   return sh;
 }
+sheet_.checked = {};
 
 /* ---------- ฐานข้อมูลบน Google Sheets ---------- */
 function SheetDB() { this.cache = {}; }
@@ -61,6 +70,17 @@ SheetDB.prototype.update = function (table, id, patch) {
     }
   }
 };
+// เขียนหลายแถวพร้อมกัน (ใช้ตอนนำเข้ารายชื่อ) — เร็วกว่าการเขียนทีละแถวมาก
+SheetDB.prototype.bulk = function (table, inserts, patches) {
+  var list = this.rows(table), cols = TLD.SCHEMA[table], sh = sheet_(table);
+  list.forEach(function (o) { var p = patches[o.id]; if (p) for (var k in p) o[k] = p[k]; });
+  var start = list.length ? list[list.length - 1]._row + 1 : 2;
+  inserts.forEach(function (o, i) { o._row = start + i; list.push(o); });
+  var toRow = function (o) { return cols.map(function (c) { return o[c] === undefined || o[c] === null ? '' : String(o[c]); }); };
+  var changed = list.filter(function (o) { return patches[o.id]; });
+  changed.forEach(function (o) { sh.getRange(o._row, 1, 1, cols.length).setValues([toRow(o)]); });
+  if (inserts.length) sh.getRange(start, 1, inserts.length, cols.length).setNumberFormat('@').setValues(inserts.map(toRow));
+};
 SheetDB.prototype.version = function () { return props_().getProperty('VERSION') || '0'; };
 SheetDB.prototype.bump = function () { props_().setProperty('VERSION', String(Date.now())); };
 
@@ -81,7 +101,7 @@ function folder_() {
 function saveImage_(dataUrl, name) {
   var m = String(dataUrl).match(/^data:(image\/[a-z+]+);base64,(.+)$/);
   if (!m) return '';
-  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], name + '.jpg');
+  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], name + (m[1] === 'image/png' ? '.png' : '.jpg'));
   var file = folder_().createFile(blob);
   try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
   return 'https://lh3.googleusercontent.com/d/' + file.getId();
@@ -122,13 +142,13 @@ function doPost(e) {
 function setup() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (ss) props_().setProperty('SHEET_ID', ss.getId());
-  sheet_('users'); sheet_('deeds');
+  sheet_('users'); sheet_('deeds'); sheet_('settings');
   secret_(); folder_();
   var db = new SheetDB();
   var hasAdmin = db.rows('users').some(function (u) { return u.role === 'admin'; });
   if (!hasAdmin) {
     db.insert('users', { id: 'admin', name: 'ผู้ดูแลระบบ', role: 'admin', dept: '', level: '', advisorId: '',
-      passHash: TLD.hashPassword('admin', 'admin1234'), active: '1', createdAt: new Date().toISOString() });
+      passHash: TLD.hashPassword('admin', 'admin1234'), active: '1', createdAt: new Date().toISOString(), qrVer: '0' });
   }
   var first = ss && ss.getSheetByName('Sheet1') || ss && ss.getSheetByName('ชีต1');
   if (first && ss.getSheets().length > 1 && first.getLastRow() === 0) ss.deleteSheet(first);
