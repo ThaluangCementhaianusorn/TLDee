@@ -35,6 +35,8 @@
     return '<span class="st ' + esc(s) + '">' + ic(i) + esc(TLD.STATUS[s] || s) + '</span>';
   }
   function art(n) { return UI.art(n); }
+  // หมวดที่ใช้งานอยู่ หรือมีข้อมูลในช่วงที่เลือก
+  function usedCats(agg) { return TLD.CATEGORIES.filter(function (c) { return agg && agg[c.id] && (c.active !== false || agg[c.id].count); }); }
   function catIcon(id, cls) { var c = cat(id); return '<span class="cicon ' + (cls || '') + '" style="--c:' + c.color + '">' + art(c.icon) + '</span>'; }
   function catTag(id) { var c = cat(id); return '<span class="tag" style="--c:' + c.color + '">' + art(c.icon) + esc(c.short) + '</span>'; }
   function imgOrIcon(d) {
@@ -152,7 +154,7 @@
       '<span class="muted">รองรับ JPG, PNG — ระบบจะย่อขนาดให้อัตโนมัติ</span><div class="prev"></div></label></div>';
   }
   function catPicker(name, sel) {
-    return '<div class="cat-pick" role="radiogroup">' + TLD.CATEGORIES.map(function (c) {
+    return '<div class="cat-pick" role="radiogroup">' + TLD.activeCats().map(function (c) {
       var id = name + '_' + c.id;
       return '<div class="cat-opt"><input type="radio" name="' + name + '" id="' + id + '" value="' + c.id + '"' + (sel === c.id ? ' checked' : '') + ' required>' +
         '<label for="' + id + '">' + catIcon(c.id) + '<span class="cn">' + esc(c.name) + '</span><span class="cp">+' + c.points + '</span></label></div>';
@@ -250,8 +252,60 @@
   }
   function applyCfg(c) {
     S.cfg = c;
-    TLD.applySettings({ depts: c.depts, medals: c.medals });
+    TLD.applySettings({ depts: c.depts, medals: c.medals, cats: c.cats, brand: c.brand, theme: c.theme, year: c.year });
+    applyLook();
+    try { localStorage.setItem('tldee_look', JSON.stringify({ brand: c.brand, theme: c.theme })); } catch (e) {}
   }
+  // ผสมสี hex: t = 0..1 (สัดส่วนของสีที่ 2)
+  function mixHex(a, b, t) {
+    var p = function (h, i) { return parseInt(h.slice(1 + i * 2, 3 + i * 2), 16); };
+    var out = '#';
+    for (var i = 0; i < 3; i++) out += ('0' + Math.round(p(a, i) * (1 - t) + p(b, i) * t).toString(16)).slice(-2);
+    return out;
+  }
+  // ใช้ชื่อสถานศึกษา/ชื่อระบบ/โลโก้/ธีมสี กับทั้งหน้าเว็บ
+  function applyLook() {
+    var B = TLD.BRAND, T = TLD.THEME, r = document.documentElement.style;
+    r.setProperty('--maroon', T.primary); r.setProperty('--maroon-d', mixHex(T.primary, '#000000', .24)); r.setProperty('--maroon-l', mixHex(T.primary, '#ffffff', .9));
+    r.setProperty('--navy', T.secondary); r.setProperty('--navy-2', mixHex(T.secondary, '#ffffff', .13)); r.setProperty('--navy-l', mixHex(T.secondary, '#ffffff', .9));
+    r.setProperty('--gold', T.accent); r.setProperty('--gold-d', mixHex(T.accent, '#000000', .25)); r.setProperty('--gold-l', mixHex(T.accent, '#ffffff', .84));
+    var mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.content = T.primary;
+    var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+    set('bName', B.appName); set('bSub', B.slogan + ' · ' + B.college);
+    set('fName', 'ระบบ' + B.appName + (B.slogan ? ' (' + B.slogan + ')' : '')); set('fCollege', B.college);
+    $$('[data-logo]').forEach(function (i) { if (i.getAttribute('src') !== UI.logo()) { i.referrerPolicy = 'no-referrer'; i.src = UI.logo(); } });
+    var fav = document.getElementById('favicon'); if (fav && fav.getAttribute('href') !== UI.logo()) fav.href = UI.logo();
+    document.title = B.appName + (B.slogan ? ' (' + B.slogan + ')' : '') + ' | ' + B.college;
+  }
+  /* ---------- เลือกปีการศึกษาที่ต้องการดู (ใช้ร่วมกันทุกหน้า) ---------- */
+  function yv(allowAll) {
+    var y = S.year || TLD.YEAR.current;
+    return (y === 'all' && !allowAll) ? TLD.YEAR.current : y;
+  }
+  function yearSel(allowAll, years) {
+    var cur = TLD.YEAR.current, v = yv(allowAll);
+    var list = (years || (S.cfg.year && S.cfg.year.list) || [cur]).slice();
+    if (list.indexOf(cur) < 0) list.unshift(cur);
+    if (v !== 'all' && list.indexOf(v) < 0) list.push(v);
+    list.sort(function (a, b) { return b - a; });
+    return '<label class="yearpick">' + ic('calendar') + '<span>ปีการศึกษา</span><select class="input" data-year aria-label="ปีการศึกษา">' +
+      list.map(function (y) { return '<option value="' + y + '"' + (String(v) === String(y) ? ' selected' : '') + '>' + y + (y === cur ? ' (ปัจจุบัน)' : '') + '</option>'; }).join('') +
+      (allowAll ? '<option value="all"' + (v === 'all' ? ' selected' : '') + '>ทุกปีการศึกษา</option>' : '') + '</select></label>';
+  }
+  function bindYear(root, fn) {
+    $$('[data-year]', root).forEach(function (s) {
+      s.onchange = function () { S.year = this.value === 'all' ? 'all' : Number(this.value); if (S.year === TLD.YEAR.current) S.year = null; fn(); };
+    });
+  }
+  function yearText(y) { return y === 'all' ? 'ทุกปีการศึกษา' : 'ปีการศึกษา ' + (y || TLD.YEAR.current); }
+  function pastNote(allowAll) {
+    var y = yv(allowAll);
+    return y !== TLD.YEAR.current ? '<div class="item warnbox past-note"><div class="main">' + ic('clock') + ' กำลังดูข้อมูลย้อนหลัง <b>' + yearText(y) + '</b> — ข้อมูลที่บันทึกใหม่จะเก็บในปีการศึกษาปัจจุบัน (' + TLD.YEAR.current + ')</div></div>' : '';
+  }
+
+  (function () {   // ใช้ธีมล่าสุดที่จำไว้ทันที (ไม่ให้หน้าจอกระพริบสีเดิม)
+    try { var l = JSON.parse(localStorage.getItem('tldee_look') || 'null'); if (l) { TLD.applySettings({ brand: l.brand, theme: l.theme }); applyLook(); } } catch (e) {}
+  })();
   function loadConfig() { return API.call('config').then(applyCfg).catch(function () {}); }
   function homeOf(role) { return role === 'admin' ? '#/admin' : role === 'teacher' ? '#/teacher' : '#/student'; }
   function handleErr(e) {
@@ -294,15 +348,16 @@
       var u = S.user;
       el.innerHTML =
         '<section class="hero">' +
-        '<img class="hero-logo" src="assets/logo-512.png" alt="ตราวิทยาลัย">' +
-        '<div><h1>คนดีศรีท่าหลวง</h1><div class="slogan">“ทำดีมีเกียรติ”</div>' +
-        '<p>ระบบจัดเก็บผลงานผู้เรียนด้านคุณธรรม จริยธรรม และจิตอาสา วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์ — ร่วมบันทึกและยกย่องความดี สะสมแต้ม รับเกียรติบัตร</p>' +
+        '<img class="hero-logo" src="' + esc(UI.logo(true)) + '" referrerpolicy="no-referrer" alt="ตราวิทยาลัย">' +
+        '<div><h1>' + esc(TLD.APP_NAME) + '</h1><div class="slogan">“' + esc(TLD.APP_SLOGAN) + '”</div>' +
+        '<p>ระบบจัดเก็บผลงานผู้เรียนด้านคุณธรรม จริยธรรม และจิตอาสา ' + esc(TLD.COLLEGE) + ' — ร่วมบันทึกและยกย่องความดี สะสมแต้ม รับเกียรติบัตร</p>' +
         '<div class="row">' +
         (u ? '<a class="btn btn-gold" href="' + homeOf(u.role) + '">' + ic(u.role === 'student' ? 'pen' : 'award') + (u.role === 'student' ? 'รายงานการทำความดี' : 'เข้าสู่หน้าทำงาน') + '</a>'
            : '<a class="btn btn-gold" href="#/login">' + ic('login') + 'เข้าสู่ระบบ</a><button class="btn btn-light" id="hScan">' + ic('scan') + 'สแกน QR เข้าสู่ระบบ</button>') +
         '<a class="btn btn-light" href="#/verify">' + ic('shield') + 'ตรวจสอบเกียรติบัตร</a></div></div></section>' +
 
-        '<section class="section"><div id="hStats">' + skel(4) + '</div></section>' +
+        '<section class="section"><div class="section-head"><h2>ภาพรวม<span id="hYearT"> ' + yearText(yv(true)) + '</span></h2><div id="hYear">' + yearSel(true) + '</div></div>' +
+        '<div id="hStats">' + skel(4) + '</div></section>' +
 
         '<section class="section split wide-l">' +
         '<div class="card"><div class="section-head"><h2>อันดับแผนกวิชาทำความดี</h2><span class="muted" id="hRankNote"></span></div><div id="hRank">' + skel(1) + '</div></div>' +
@@ -312,21 +367,25 @@
         '<div class="card"><div class="section-head"><h2>ยอดนักทำความดี Top 5</h2></div><div id="hTop">' + skel(1) + '</div></div>' +
         '<div class="card"><div class="section-head"><h2>เกณฑ์คะแนนและเกียรติบัตร</h2></div>' +
         '<div class="grid g2"><div><h3>หมวดหมู่ความดี</h3><ul class="criteria">' +
-        TLD.CATEGORIES.map(function (c) { return '<li>' + catIcon(c.id) + '<span style="flex:1">' + esc(c.name) + '</span><span class="pts">+' + c.points + '</span></li>'; }).join('') +
+        TLD.activeCats().map(function (c) { return '<li>' + catIcon(c.id) + '<span style="flex:1">' + esc(c.name) + '</span><span class="pts">+' + c.points + '</span></li>'; }).join('') +
         '</ul></div><div><h3>ระดับเกียรติบัตร (ปวช.1 – ปวส.2)</h3><ul class="criteria">' +
         TLD.MEDALS.map(function (m) { return '<li>' + medalIcon(m.key) + '<span><b>' + esc(m.name) + ' · ' + m.min + ' แต้ม</b><span class="muted">' + esc(m.title) + '</span></span></li>'; }).join('') +
         '</ul></div></div></div></section>';
       var hs = $('#hScan');
       if (hs) hs.onclick = function () { Login.scan(); };
+      bindYear($('#hYear'), function () { Home.refresh(); });
       this.refresh();
     },
     refresh: function () {
       var self = this;
-      return API.call('publicStats').then(function (d) { self.data = d; self.paint(); }).catch(handleErr);
+      return API.call('publicStats', { year: yv(true) }).then(function (d) { self.data = d; self.paint(); }).catch(handleErr);
     },
     paint: function () {
       var d = this.data, t = d.totals;
       if (!$('#hStats')) return;
+      $('#hYearT').textContent = ' ' + yearText(d.year);
+      $('#hYear').innerHTML = yearSel(true, d.years);
+      bindYear($('#hYear'), function () { Home.refresh(); });
       $('#hStats').innerHTML = '<div class="grid g4">' +
         statCard('check', 'ico-ok', num(t.approved), 'ความดีที่รับรองแล้ว (ครั้ง)') +
         statCard('star', 'ico-gold', num(t.points), 'แต้มความดีสะสมรวม') +
@@ -366,7 +425,7 @@
     render: function (el, args) {
       var code = decodeURIComponent(args[0] || '');
       el.innerHTML = '<div class="auth-wrap" style="max-width:760px"><div class="card">' +
-        '<div class="auth-head"><img src="assets/logo-192.png" alt=""><h2>ตรวจสอบความถูกต้องของเอกสาร</h2>' +
+        '<div class="auth-head"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt=""><h2>ตรวจสอบความถูกต้องของเอกสาร</h2>' +
         '<p class="muted">กรอกรหัสเกียรติบัตร (TLC-CERT-...) หรือรหัสระเบียนประวัติ (TLC-PORT-...) หรือสแกน QR Code บนเอกสาร</p></div>' +
         '<form id="vForm" class="row"><input class="input" name="code" style="flex:1;min-width:240px" placeholder="เช่น TLC-CERT-G-66001-XXXXXXXX" value="' + esc(code) + '" required aria-label="รหัสเอกสาร">' +
         '<button class="btn btn-primary">' + ic('search') + 'ตรวจสอบ</button><button type="button" class="btn btn-ghost" id="vScan">' + ic('scan') + 'สแกน</button></form><div id="vRes"></div></div></div>';
@@ -392,7 +451,7 @@
         if (!r.valid) {
           box.innerHTML = '<div class="verify-res bad"><span class="ic-big">' + art('alert') + '</span><div><h3 style="color:var(--bad)">' +
             (r.revoked ? 'เอกสารนี้ไม่มีผลแล้ว' : 'ไม่พบเอกสารในระบบ') + '</h3><p>รหัส <b>' + esc(r.code) + '</b> ' +
-            (r.revoked ? 'ไม่ตรงกับคะแนนสะสมปัจจุบันของผู้เรียน' : 'ไม่ได้ออกจากระบบคนดีศรีท่าหลวง หรือรหัสไม่ถูกต้อง') + '</p></div></div>';
+            (r.revoked ? 'ไม่ตรงกับคะแนนสะสมปัจจุบันของผู้เรียน' : 'ไม่ได้ออกจากระบบ' + esc(TLD.APP_NAME) + ' หรือรหัสไม่ถูกต้อง') + '</p></div></div>';
           return;
         }
         var m = medalInfo(r.medal);
@@ -412,7 +471,7 @@
   var Login = {
     render: function (el) {
       if (S.user) { location.hash = homeOf(S.user.role); return; }
-      el.innerHTML = '<div class="auth-wrap"><div class="card"><div class="auth-head"><img src="assets/logo-192.png" alt="">' +
+      el.innerHTML = '<div class="auth-wrap"><div class="card"><div class="auth-head"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt="">' +
         '<h2>เข้าสู่ระบบ</h2><p class="muted">นักเรียน/นักศึกษาสแกน QR Code บนบัตร หรือใช้รหัสผ่าน</p></div>' +
         '<button class="btn btn-gold btn-block btn-lg" id="lScan">' + ic('scan') + 'สแกน QR Code เข้าสู่ระบบ</button>' +
         '<div class="divider"><span>หรือ</span></div>' +
@@ -451,7 +510,7 @@
 
   var QrLogin = {
     render: function (el, args) {
-      el.innerHTML = '<div class="auth-wrap"><div class="card center"><img src="assets/logo-192.png" alt="" width="110"><h2>กำลังเข้าสู่ระบบด้วย QR Code</h2><div class="skel" style="height:60px"></div></div></div>';
+      el.innerHTML = '<div class="auth-wrap"><div class="card center"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt="" width="110"><h2>กำลังเข้าสู่ระบบด้วย QR Code</h2><div class="skel" style="height:60px"></div></div></div>';
       API.call('qrLogin', { id: decodeURIComponent(args[0] || ''), sig: args[1] || '' }).then(function (r) {
         saveSession(r.token, r.user);
         toast('ยินดีต้อนรับ ' + r.user.name, 'ok');
@@ -466,8 +525,8 @@
   var Register = {
     render: function (el) {
       if (S.user) { location.hash = homeOf(S.user.role); return; }
-      el.innerHTML = '<div class="auth-wrap" style="max-width:720px"><div class="card"><div class="auth-head"><img src="assets/logo-192.png" alt="">' +
-        '<h2>สมัครสมาชิก</h2><p class="muted">สำหรับนักเรียน/นักศึกษา วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์</p></div>' +
+      el.innerHTML = '<div class="auth-wrap" style="max-width:720px"><div class="card"><div class="auth-head"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt="">' +
+        '<h2>สมัครสมาชิก</h2><p class="muted">สำหรับนักเรียน/นักศึกษา ' + esc(TLD.COLLEGE) + '</p></div>' +
         '<form id="rForm"><div class="grid g2">' +
         '<div class="field"><label for="r_id">รหัสนักศึกษา</label><input class="input" id="r_id" name="id" inputmode="numeric" autocomplete="username" required></div>' +
         '<div class="field"><label for="r_name">ชื่อ-นามสกุล</label><input class="input" id="r_name" name="name" placeholder="เช่น นายสมชาย ใจดี" required></div>' +
@@ -502,7 +561,8 @@
     render: function (el) {
       var u = S.user, self = this;
       this.edit = null; this.form = { image: '' }; this.pfR = null;
-      el.innerHTML = '<div id="sProg" class="card progress-card"><div class="skel" style="opacity:.2"></div></div>' +
+      el.innerHTML = '<div class="yearbar" id="sYear">' + yearSel(false) + '</div><div id="sPast">' + pastNote(false) + '</div>' +
+        '<div id="sProg" class="card progress-card"><div class="skel" style="opacity:.2"></div></div>' +
         '<div class="section"><div class="tabs" role="tablist">' +
         '<button class="on" data-t="form">' + ic('pen') + 'รายงานความดี</button><button data-t="hist">' + ic('list') + 'ประวัติของฉัน <span class="badge" id="sCnt">0</span></button>' +
         '<button data-t="cert">' + ic('award') + 'เกียรติบัตร</button><button data-t="pf">' + ic('palette') + 'ออกแบบ Portfolio</button><button data-t="qr">' + ic('qr') + 'บัตร QR ของฉัน</button></div>' +
@@ -535,7 +595,7 @@
     pfLoad: function () {
       var self = this;
       if (this.pfR && $('#pfPrev')) return this.pfScale();
-      API.call('studentReport', {}).then(function (r) {
+      API.call('studentReport', { year: yv(false) }).then(function (r) {
         self.pfR = r; self.pfT = PF.norm(r.portfolio); self.pfForm();
       }).catch(handleErr);
     },
@@ -656,12 +716,15 @@
     },
     refresh: function () {
       var self = this;
-      return API.call('myDeeds').then(function (r) { self.data = r; self.paint(); }).catch(handleErr);
+      return API.call('myDeeds', { year: yv(false) }).then(function (r) { self.data = r; self.paint(); }).catch(handleErr);
     },
     paint: function () {
       var r = this.data, s = r.student, self = this;
       if (!$('#sProg')) return;
-      $('#sProg').innerHTML = progressHtml(s, 'สวัสดี ' + s.name);
+      $('#sYear').innerHTML = yearSel(false, r.years);
+      bindYear($('#sYear'), function () { self.pfR = null; self.refresh().then(function () { if ($('[data-p=pf]:not(.hide)')) self.pfLoad(); }); });
+      $('#sPast').innerHTML = pastNote(false);
+      $('#sProg').innerHTML = progressHtml(s, 'สวัสดี ' + s.name, r.year);
       $('#sCnt').textContent = r.deeds.length;
       $('#sHist').innerHTML = r.deeds.length ? '<div class="list">' + r.deeds.map(function (d) {
         return '<div class="item">' + (d.imageUrl ? '<button class="thumb" data-img="' + esc(d.imageUrl) + '" aria-label="ดูรูป">' + imgOrIcon(d) + '</button>' : '<div class="thumb">' + catIcon(d.category, 'lg') + '</div>') +
@@ -676,22 +739,22 @@
         b.onclick = function () { self.setEdit(r.deeds.filter(function (d) { return d.id === b.dataset.edit; })[0]); };
       });
       $('#sCert').innerHTML = certButtons(s);
-      bindCertButtons($('#sCert'), s.id);
+      bindCertButtons($('#sCert'), s.id, r.year);
     }
   };
   function roField(l, v) { return '<div class="field"><span class="label">' + esc(l) + '</span><input class="input" value="' + esc(v) + '" readonly aria-label="' + esc(l) + '"></div>'; }
-  function progressHtml(s, title) {
+  function progressHtml(s, title, year) {
     var max = TLD.MEDALS[TLD.MEDALS.length - 1].min, pct = Math.min(100, s.points / max * 100);
     var m = medalInfo(s.medal), nx = medalInfo(s.next);
     return '<div class="pc-top">' + medalIcon(s.medal, 'lg') + '<div style="flex:1;min-width:220px"><h2 style="margin:0">' + esc(title) + '</h2>' +
       '<div style="opacity:.9">' + esc(s.dept) + ' · ' + esc(s.level) + (s.advisorName ? ' · ครูที่ปรึกษา ' + esc(s.advisorName) : '') + '</div>' +
-      '<div style="margin-top:6px">' + medalTag(s.medal) + '</div></div>' +
+      '<div style="margin-top:6px" class="row">' + medalTag(s.medal) + '<span class="yr-tag">' + ic('calendar') + yearText(year || TLD.YEAR.current) + '</span></div></div>' +
       '<div class="center"><div class="pc-pts">' + s.points + '</div><div>แต้มสะสม</div></div></div>' +
       '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + max + '" aria-valuenow="' + s.points + '"><div class="fill" style="width:' + pct + '%"></div>' +
       TLD.MEDALS.map(function (md) {
         return '<span class="mk' + (s.points >= md.min ? '' : ' lock') + '" style="left:' + (md.min / max * 100) + '%">' + UI.medalSvg(md.key) + '<small>' + md.min + ' แต้ม</small></span>';
       }).join('') + '</div>' +
-      '<div class="pc-msg">' + ic(nx ? 'target' : 'sparkles') + (nx ? ' อีก <b>' + s.need + ' แต้ม</b> จะปลดล็อก <b>' + esc(nx.full) + '</b>' : ' ยอดเยี่ยม! ได้รับเหรียญทอง “คนดีศรีท่าหลวง” แล้ว') + '</div>';
+      '<div class="pc-msg">' + ic(nx ? 'target' : 'sparkles') + (nx ? ' อีก <b>' + s.need + ' แต้ม</b> จะปลดล็อก <b>' + esc(nx.full) + '</b>' : ' ยอดเยี่ยม! ได้รับเหรียญทอง “' + esc(TLD.APP_NAME) + '” แล้ว') + '</div>';
   }
   function certButtons(s) {
     return '<div class="grid g3">' + TLD.MEDALS.map(function (m) {
@@ -703,9 +766,9 @@
       '<div style="flex:1;min-width:220px"><h3 style="margin:0">ระเบียนประวัติการทำความดีและจิตอาสา (Good Deeds E-Portfolio)</h3><p class="muted" style="margin:0">รวมทุกรายการที่อนุมัติแล้ว พร้อม QR Code ตรวจสอบ ใช้ประกอบการสมัครเรียนต่อ/สมัครงาน</p></div>' +
       '<button class="btn btn-primary" data-port="1"' + (s.count ? '' : ' disabled') + '>' + ic('printer') + 'พิมพ์ E-Portfolio (PDF)</button></div></div>';
   }
-  function bindCertButtons(root, sid) {
-    $$('[data-cert]', root).forEach(function (b) { b.onclick = function () { Printer.cert(sid, b.dataset.cert, b); }; });
-    $$('[data-port]', root).forEach(function (b) { b.onclick = function () { Printer.portfolio(sid, b); }; });
+  function bindCertButtons(root, sid, year) {
+    $$('[data-cert]', root).forEach(function (b) { b.onclick = function () { Printer.cert(sid, b.dataset.cert, b, year); }; });
+    $$('[data-port]', root).forEach(function (b) { b.onclick = function () { Printer.portfolio(sid, b, year); }; });
   }
 
   /* ===================================================================
@@ -716,7 +779,7 @@
     render: function (el) {
       var self = this;
       this.sel = null; this.mine = S.user.role === 'teacher'; this.q = ''; this.form = { image: '' };
-      el.innerHTML = '<div class="section-head"><h2>บันทึกและมอบแต้มความดี</h2><span class="muted">แต้มที่ครูบันทึกจะได้รับการอนุมัติทันที</span></div>' +
+      el.innerHTML = '<div class="section-head"><h2>บันทึกและมอบแต้มความดี</h2><div class="row"><span class="muted">แต้มที่ครูบันทึกจะได้รับการอนุมัติทันที</span><div id="tYear">' + yearSel(false) + '</div></div></div><div id="tPast">' + pastNote(false) + '</div>' +
         '<div class="split"><div class="card"><h3>1) เลือกนักเรียน/นักศึกษา</h3>' +
         '<div class="row" style="margin-bottom:10px;flex-wrap:nowrap"><input class="input" id="tQ" placeholder="ค้นหาชื่อหรือรหัสนักศึกษา" aria-label="ค้นหานักศึกษา" style="flex:1">' +
         '<button class="btn btn-gold" id="tScan" title="สแกน QR บัตรนักศึกษา">' + ic('scan') + '<span class="hide-sm">สแกน</span></button></div>' +
@@ -728,7 +791,7 @@
         '<div class="field"><label for="t_detail">พฤติกรรมที่พบเห็น</label><textarea class="input" id="t_detail" name="detail" required placeholder="อธิบายพฤติกรรมความดีที่พบเห็น"></textarea></div>' +
         '<div id="tUp">' + uploadField('รูปภาพประกอบ (ถ้ามี)') + '</div>' +
         '<div id="tPreview"></div><button class="btn btn-primary btn-block" id="tSubmit">' + ic('check') + 'บันทึกและมอบแต้มทันที</button></form></div></div>' +
-        '<section class="section card"><div class="section-head"><h2>สรุปเหรียญรางวัลนักศึกษา</h2><button class="btn btn-ghost btn-sm" id="tCards">' + ic('qr') + 'พิมพ์บัตร QR (ตามตัวกรอง)</button></div>' +
+        '<section class="section card"><div class="section-head"><h2>สรุปเหรียญรางวัลนักศึกษา <small class="muted" id="tSumYear">' + yearText(yv(false)) + '</small></h2><button class="btn btn-ghost btn-sm" id="tCards">' + ic('qr') + 'พิมพ์บัตร QR (ตามตัวกรอง)</button></div>' +
         '<div class="filters"><input class="input" id="sumQ" placeholder="ค้นหาชื่อ/รหัส" aria-label="ค้นหา">' +
         '<select class="input" id="sumDept" aria-label="แผนกวิชา">' + opts(TLD.DEPTS, '', 'ทุกแผนกวิชา') + '</select>' +
         '<select class="input" id="sumLevel" aria-label="ระดับชั้น">' + opts(TLD.LEVELS, '', 'ทุกระดับชั้น') + '</select>' +
@@ -756,11 +819,12 @@
       };
       bindUpload($('#tUp'), this.form);
       $('#tForm').onsubmit = function (e) { e.preventDefault(); self.submit(this); };
+      bindYear($('#tYear'), function () { $('#tPast').innerHTML = pastNote(false); $('#tSumYear').textContent = yearText(yv(false)); self.refresh(); });
       this.refresh();
     },
     refresh: function () {
       var self = this;
-      return API.call('students').then(function (list) { self.students = list; self.list(); self.status(); self.summary(); }).catch(handleErr);
+      return API.call('students', { year: yv(false) }).then(function (list) { self.students = list; self.list(); self.status(); self.summary(); }).catch(handleErr);
     },
     filtered: function () {
       var q = this.q, mine = this.mine, me = S.user.id;
@@ -840,8 +904,8 @@
             (s.count ? '<button class="btn btn-ghost btn-sm" data-port="1" data-sid="' + esc(s.id) + '">' + ic('book') + 'Portfolio</button>' : '') + '</div></td></tr>';
         }).join('') + '</tbody></table></div><p class="muted" style="margin-top:8px">ทั้งหมด ' + list.length + ' คน' + (mine ? ' (เฉพาะในที่ปรึกษา)' : '') + '</p>'
         : empty('ไม่พบข้อมูลตามเงื่อนไข', 'search');
-      $$('#tSum [data-cert]').forEach(function (b) { b.onclick = function () { Printer.cert(b.dataset.sid, b.dataset.cert, b); }; });
-      $$('#tSum [data-port]').forEach(function (b) { b.onclick = function () { Printer.portfolio(b.dataset.sid, b); }; });
+      $$('#tSum [data-cert]').forEach(function (b) { b.onclick = function () { Printer.cert(b.dataset.sid, b.dataset.cert, b, yv(false)); }; });
+      $$('#tSum [data-port]').forEach(function (b) { b.onclick = function () { Printer.portfolio(b.dataset.sid, b, yv(false)); }; });
     }
   };
 
@@ -854,7 +918,7 @@
     charts: {},
     render: function (el) {
       var self = this;
-      el.innerHTML = '<div class="tabs" role="tablist">' +
+      el.innerHTML = '<div class="yearbar" id="aYear">' + yearSel(true) + '</div><div id="aPast">' + pastNote(true) + '</div><div class="tabs" role="tablist">' +
         '<button data-t="review">' + ic('search') + 'ตรวจสอบหลักฐาน <span class="badge" id="aPend">0</span></button>' +
         '<button data-t="dash">' + ic('chart') + 'แดชบอร์ดผู้บริหาร</button><button data-t="users">' + ic('users') + 'ครูและนักเรียน</button>' +
         '<button data-t="settings">' + ic('settings') + 'ตั้งค่าระบบ</button></div>' +
@@ -881,6 +945,7 @@
       $$('.tabs button', el).forEach(function (b) { b.onclick = function () { self.tab(b.dataset.t); }; });
       ['fQ', 'fDept', 'fCat', 'fSt'].forEach(function (id) { $('#' + id).oninput = function () { self.table(); }; });
       ['uQ', 'uRole', 'uDept'].forEach(function (id) { $('#' + id).oninput = function () { self.userTable(); }; });
+      bindYear($('#aYear'), function () { $('#aPast').innerHTML = pastNote(true); self.refresh(); });
       $('#aCsv').onclick = function () { self.csv(); };
       $('#aPdf').onclick = function () { self.report(); };
       $('#uAdd').onclick = function () { self.userForm(null, 'student'); };
@@ -903,8 +968,8 @@
     },
     refresh: function () {
       var self = this;
-      var jobs = [API.call('allDeeds').then(function (d) { self.deeds = d; self.table(); })];
-      if (this.tabName === 'dash') jobs.push(API.call('adminStats').then(function (s) { self.stats = s; self.dash(); }));
+      var jobs = [API.call('allDeeds', { year: yv(true) }).then(function (d) { self.deeds = d; self.table(); })];
+      if (this.tabName === 'dash') jobs.push(API.call('adminStats', { year: yv(true) }).then(function (s) { self.stats = s; self.dash(); }));
       if (this.tabName === 'users') jobs.push(API.call('users').then(function (u) { self.users = u; self.userTable(); }));
       return Promise.all(jobs).catch(handleErr);
     },
@@ -978,8 +1043,9 @@
       var c1 = { labels: depts, datasets: [
         { label: 'จำนวนครั้ง', data: depts.map(function (d) { return s.dept[d].count; }), backgroundColor: '#14244B', borderRadius: 8 },
         { label: 'แต้มรวม', data: depts.map(function (d) { return s.dept[d].points; }), backgroundColor: '#D99B26', borderRadius: 8 }] };
-      var c2 = { labels: TLD.CATEGORIES.map(function (c) { return c.short; }), datasets: [{
-        data: TLD.CATEGORIES.map(function (c) { return s.cat[c.id].count; }), backgroundColor: TLD.CATEGORIES.map(function (c) { return c.color; }),
+      var cs = usedCats(s.cat);
+      var c2 = { labels: cs.map(function (c) { return c.short; }), datasets: [{
+        data: cs.map(function (c) { return s.cat[c.id].count; }), backgroundColor: cs.map(function (c) { return c.color; }),
         borderColor: '#fff', borderWidth: 3 }] };
       if (this.charts.dept && this.charts.dept.canvas === $('#cDept')) {
         this.charts.dept.data = c1; this.charts.dept.update(); this.charts.cat.data = c2; this.charts.cat.update();
@@ -998,7 +1064,7 @@
         return [d.id, d.date, d.studentId, d.studentName, d.dept, d.level, cat(d.category).name, d.points, d.detail, d.impact, d.learned,
           TLD.STATUS[d.status], d.recordedByName, d.reviewedBy, d.reviewNote, String(d.imageUrl || '').indexOf('data:') === 0 ? '(รูปในเครื่อง)' : d.imageUrl];
       });
-      downloadCsv([head].concat(rows), 'คนดีศรีท่าหลวง_รายงาน_' + today() + '.csv');
+      downloadCsv([head].concat(rows), TLD.APP_NAME + '_' + (yv(true) === 'all' ? 'ทุกปี' : yv(true)) + '_รายงาน_' + today() + '.csv');
       toast('ดาวน์โหลดไฟล์ ' + list.length + ' รายการแล้ว', 'ok');
     },
     report: function () {
@@ -1216,12 +1282,61 @@
   };
 
   /* ---------------- ตั้งค่าระบบ: แผนกวิชา / เกณฑ์เหรียญ / เกียรติบัตร ---------------- */
+  var THEMES = [
+    { name: 'ท่าหลวง แดง-กรมท่า', primary: '#8B1E24', secondary: '#14244B', accent: '#D99B26' },
+    { name: 'น้ำเงิน-ทอง', primary: '#1F3C88', secondary: '#0F1E45', accent: '#E0A526' },
+    { name: 'เขียวมรกต', primary: '#1E6B47', secondary: '#133A2B', accent: '#D4A537' },
+    { name: 'ม่วงราชพฤกษ์', primary: '#5B3A99', secondary: '#2A1F4D', accent: '#E3B341' },
+    { name: 'ฟ้าทะเล', primary: '#0E7380', secondary: '#12324A', accent: '#F0A04B' },
+    { name: 'ส้มอิฐ', primary: '#B4541A', secondary: '#3A2A20', accent: '#E8B04A' },
+    { name: 'ชมพูบานเย็น', primary: '#A72F68', secondary: '#3B1830', accent: '#E9B949' },
+    { name: 'เทาเข้ม', primary: '#2B2F3A', secondary: '#1A1E2B', accent: '#D99B26' }
+  ];
+  var ICON_NAMES = { trophy: 'ถ้วยรางวัล', gem: 'เพชร', sprout: 'ต้นกล้า', heart: 'หัวใจ', leaf: 'ใบไม้', star: 'ดาว', award: 'เหรียญ', book: 'หนังสือ', users: 'กลุ่มคน', shield: 'โล่', check: 'เครื่องหมายถูก', user: 'บุคคล' };
+
   var Settings = {
     render: function (el) {
       var self = this, c = S.cfg, cert = Object.assign({}, c.cert);
       this.cert = cert;
+      this.brand = Object.assign({}, TLD.BRAND); this.theme = Object.assign({}, TLD.THEME);
+      this.cats = TLD.CATEGORIES.map(function (x) { return Object.assign({}, x); });
+      var B = this.brand, T = this.theme, Y = (c.year && c.year.current) || TLD.YEAR.current;
       el.innerHTML =
-        '<div class="split"><div class="card"><div class="section-head"><h2>แผนกวิชา</h2></div>' +
+        // ---- ข้อมูลสถานศึกษา + ธีมสี ----
+        '<div class="split"><div class="card"><div class="section-head"><h2>ข้อมูลสถานศึกษาและชื่อระบบ</h2></div>' +
+        '<div class="field"><label for="brCollege">ชื่อสถานศึกษา</label><input class="input" id="brCollege" maxlength="150" value="' + esc(B.college) + '"></div>' +
+        '<div class="grid g2"><div class="field"><label for="brApp">ชื่อระบบ / ชื่อแอป</label><input class="input" id="brApp" maxlength="60" value="' + esc(B.appName) + '"></div>' +
+        '<div class="field"><label for="brSlogan">คำขวัญ / สโลแกน</label><input class="input" id="brSlogan" maxlength="80" value="' + esc(B.slogan) + '"></div></div>' +
+        '<div class="field"><span class="label">ตราสัญลักษณ์ (โลโก้)</span><div class="row"><img id="brLogo" class="logo-prev" src="' + esc(UI.logo()) + '" alt="" referrerpolicy="no-referrer">' +
+        '<label class="btn btn-ghost btn-sm">' + ic('upload') + 'อัปโหลดโลโก้<input type="file" id="brLogoFile" accept="image/*" hidden></label>' +
+        '<button type="button" class="btn btn-ghost btn-sm" id="brLogoDel">' + ic('refresh') + 'ใช้โลโก้เดิม</button></div><span class="hint">แนะนำไฟล์ PNG พื้นหลังโปร่งใส ขนาดจัตุรัส</span></div>' +
+        '<button class="btn btn-primary btn-block" id="brSave">' + ic('save') + 'บันทึกข้อมูลสถานศึกษา</button></div>' +
+        '<div class="card"><div class="section-head"><h2>ธีมสีของระบบ</h2></div>' +
+        '<div class="theme-presets">' + THEMES.map(function (p, i) {
+          return '<button type="button" class="tp" data-tp="' + i + '" title="' + esc(p.name) + '"><span style="background:' + p.primary + '"></span><span style="background:' + p.secondary + '"></span><span style="background:' + p.accent + '"></span><small>' + esc(p.name) + '</small></button>';
+        }).join('') + '</div>' +
+        '<div class="grid g3">' + [['primary', 'สีหลัก'], ['secondary', 'สีรอง'], ['accent', 'สีเน้น']].map(function (k) {
+          return '<div class="field"><label for="th_' + k[0] + '">' + k[1] + '</label><input class="input color-in" type="color" id="th_' + k[0] + '" value="' + T[k[0]] + '"></div>';
+        }).join('') + '</div>' +
+        '<div class="theme-demo" id="thDemo"></div>' +
+        '<button class="btn btn-primary btn-block" id="thSave">' + ic('save') + 'บันทึกธีมสี</button></div></div>' +
+
+        // ---- หมวดหมู่คุณธรรม ----
+        '<section class="section card"><div class="section-head"><h2>หมวดหมู่คุณธรรมและแต้ม</h2>' +
+        '<div class="row"><button class="btn btn-ghost btn-sm" id="catAdd">' + ic('plus') + 'เพิ่มหมวดหมู่</button><button class="btn btn-primary btn-sm" id="catSave">' + ic('save') + 'บันทึกหมวดหมู่</button></div></div>' +
+        '<p class="hint" style="margin-top:-6px">ปรับแต้มได้ตามสัดส่วนที่ต้องการ — แต้มใหม่ใช้กับรายการที่บันทึกหลังจากนี้ (รายการเดิมคงแต้มเดิม) · หมวดที่เคยใช้งานแล้วจะ “ปิดใช้งาน” แทนการลบ</p>' +
+        '<div id="catList" class="cat-edit"></div><div id="catShare" class="cat-share"></div></section>' +
+
+        // ---- ปีการศึกษา ----
+        '<section class="section card"><div class="section-head"><h2>ปีการศึกษา (จัดเก็บข้อมูลรายปี)</h2></div>' +
+        '<div class="year-box"><div class="yb-now"><small>ปีการศึกษาปัจจุบัน</small><b id="yrNow">' + Y + '</b></div>' +
+        '<div style="flex:1;min-width:240px"><p style="margin:0 0 10px">รายการความดีที่บันทึกใหม่จะถูกเก็บในปีการศึกษาปัจจุบัน แต้มสะสม เหรียญ อันดับ และเกียรติบัตรคำนวณแยกแต่ละปี ข้อมูลปีเก่ายังเก็บไว้ครบ เลือกดูย้อนหลังได้ทุกหน้า</p>' +
+        '<div class="row"><input class="input" type="number" id="yrIn" min="2500" max="2700" value="' + Y + '" style="max-width:140px" aria-label="ปีการศึกษา">' +
+        '<button class="btn btn-ghost" id="yrSet">' + ic('save') + 'ตั้งเป็นปีปัจจุบัน</button>' +
+        '<button class="btn btn-gold" id="yrNext">' + ic('calendar') + 'เริ่มปีการศึกษาใหม่ (' + (Y + 1) + ')</button></div>' +
+        '<p class="hint" style="margin-top:8px">ข้อมูลที่มี: ' + ((c.year && c.year.list) || [Y]).map(function (y) { return 'ปี ' + y; }).join(' · ') + '</p></div></div></section>' +
+
+        '<div class="split section"><div class="card"><div class="section-head"><h2>แผนกวิชา</h2></div>' +
         '<div id="deptList" class="dept-list"></div>' +
         '<div class="row" style="flex-wrap:nowrap;margin-top:10px"><input class="input" id="deptNew" placeholder="ชื่อแผนกวิชาใหม่" style="flex:1"><button class="btn btn-ghost" id="deptAdd">' + ic('plus') + 'เพิ่ม</button></div>' +
         '<button class="btn btn-primary btn-block" id="deptSave" style="margin-top:14px">' + ic('save') + 'บันทึกแผนกวิชา</button></div>' +
@@ -1254,6 +1369,61 @@
         '<div class="cert-preview" id="certPrev"></div></div></div></section>';
 
       function tf(k, label) { return '<div class="field"><label for="ce_' + k + '">' + esc(label) + '</label><input class="input" id="ce_' + k + '" data-k="' + k + '" value="' + esc(cert[k]) + '"></div>'; }
+
+      // ---- ข้อมูลสถานศึกษา ----
+      $('#brLogoFile').onchange = function () {
+        var f = this.files[0]; if (!f) return;
+        compressImage(f, 512, true).then(function (d) { B.logo = d; $('#brLogo').src = d; }, function (e) { toast(e.message, 'bad'); });
+      };
+      $('#brLogoDel').onclick = function () { B.logo = ''; $('#brLogo').src = 'assets/logo-192.png'; };
+      $('#brSave').onclick = function () {
+        var b = this; busy(b, true);
+        B.college = $('#brCollege').value.trim(); B.appName = $('#brApp').value.trim(); B.slogan = $('#brSlogan').value.trim();
+        API.call('saveSettings', { brand: B }).then(function (c2) {
+          busy(b, false); applyCfg(c2); Object.assign(B, c2.brand); self.preview(); toast('บันทึกข้อมูลสถานศึกษาแล้ว', 'ok');
+        }).catch(function (e) { busy(b, false); handleErr(e); });
+      };
+      // ---- ธีมสี ----
+      var thDemo = function () {
+        $('#thDemo').innerHTML = '<div class="td-bar" style="background:linear-gradient(100deg,' + mixHex(T.primary, '#000000', .24) + ',' + T.primary + ');border-bottom-color:' + T.accent + '"><b>' + esc($('#brApp').value || B.appName) + '</b></div>' +
+          '<div class="td-body"><span class="td-btn" style="background:' + T.primary + '">ปุ่มหลัก</span><span class="td-btn" style="background:' + T.accent + ';color:#1A1E2B">ปุ่มทอง</span>' +
+          '<span class="td-h" style="color:' + T.secondary + '">หัวข้อ</span></div>';
+      };
+      ['primary', 'secondary', 'accent'].forEach(function (k) { $('#th_' + k).oninput = function () { T[k] = this.value; thDemo(); }; });
+      $$('[data-tp]', el).forEach(function (b) {
+        b.onclick = function () { var p = THEMES[+b.dataset.tp]; ['primary', 'secondary', 'accent'].forEach(function (k) { T[k] = p[k]; $('#th_' + k).value = p[k]; }); thDemo(); };
+      });
+      $('#thSave').onclick = function () {
+        var b = this; busy(b, true);
+        API.call('saveSettings', { theme: T }).then(function (c2) { busy(b, false); applyCfg(c2); toast('บันทึกธีมสีแล้ว', 'ok'); }).catch(function (e) { busy(b, false); handleErr(e); });
+      };
+      thDemo();
+      // ---- หมวดหมู่ ----
+      this.catList();
+      $('#catAdd').onclick = function () {
+        self.cats.push({ id: '', name: '', short: '', points: 1, icon: 'star', color: '#14244B', active: true });
+        self.catList();
+        var ins = $$('#catList [data-f=name]'); if (ins.length) ins[ins.length - 1].focus();
+      };
+      $('#catSave').onclick = function () {
+        var b = this; busy(b, true);
+        API.call('saveSettings', { cats: self.cats }).then(function (c2) {
+          busy(b, false); applyCfg(c2); self.cats = TLD.CATEGORIES.map(function (x) { return Object.assign({}, x); }); self.catList();
+          toast('บันทึกหมวดหมู่และแต้มแล้ว', 'ok');
+        }).catch(function (e) { busy(b, false); handleErr(e); });
+      };
+      // ---- ปีการศึกษา ----
+      var setYear = function (y, btn, msg) {
+        busy(btn, true);
+        API.call('saveSettings', { year: { current: y } }).then(function (c2) {
+          busy(btn, false); applyCfg(c2); S.year = null; toast(msg, 'ok'); Settings.render(el);
+        }).catch(function (e) { busy(btn, false); handleErr(e); });
+      };
+      $('#yrSet').onclick = function () { setYear(Number($('#yrIn').value), this, 'ตั้งปีการศึกษาปัจจุบันเป็น ' + $('#yrIn').value + ' แล้ว'); };
+      $('#yrNext').onclick = function () {
+        if (!confirm('เริ่มปีการศึกษา ' + (Y + 1) + ' ?\n\nแต้มสะสมของนักศึกษาจะเริ่มนับใหม่ในปีนี้ ข้อมูลปี ' + Y + ' ยังเก็บไว้และดูย้อนหลังได้')) return;
+        setYear(Y + 1, this, 'เริ่มปีการศึกษา ' + (Y + 1) + ' แล้ว');
+      };
 
       this.depts = TLD.DEPTS.slice();
       this.deptList();
@@ -1290,11 +1460,58 @@
       };
       $('#certTest').onclick = function () {
         var mk = $('input[name=pvm]:checked').value;
-        Printer.printCert(cert, { name: 'นายตัวอย่าง คนดีศรีท่าหลวง', level: 'ปวช.3', dept: TLD.DEPTS[0] || '', medal: mk, code: 'TLC-CERT-TEST' });
+        Printer.printCert(cert, { name: 'นายตัวอย่าง ใจดีมีเกียรติ', level: 'ปวช.3', dept: TLD.DEPTS[0] || '', medal: mk, code: 'TLC-CERT-TEST' });
       };
       this.sigPrev();
       this.preview();
       if (!this.onResize) { this.onResize = function () { Settings.scale(); }; window.addEventListener('resize', this.onResize); }
+    },
+    catList: function () {
+      var self = this, box = $('#catList');
+      if (!box) return;
+      box.innerHTML = '<div class="ce-head"><span>ไอคอน</span><span>ชื่อหมวดหมู่ (เต็ม)</span><span>ชื่อย่อ</span><span>แต้ม</span><span>สี</span><span>ใช้งาน</span><span></span></div>' +
+        this.cats.map(function (c, i) {
+          return '<div class="ce-row' + (c.active === false ? ' off' : '') + '" data-i="' + i + '">' +
+            '<div class="ce-ic"><span class="cicon" style="--c:' + esc(c.color) + '">' + UI.art(c.icon) + '</span><select class="input" data-f="icon" aria-label="ไอคอน">' +
+            TLD.CAT_ICONS.map(function (n) { return '<option value="' + n + '"' + (n === c.icon ? ' selected' : '') + '>' + (ICON_NAMES[n] || n) + '</option>'; }).join('') + '</select></div>' +
+            '<input class="input" data-f="name" maxlength="120" placeholder="เช่น มารยาทงามตามแบบไทย" value="' + esc(c.name) + '" aria-label="ชื่อหมวดหมู่">' +
+            '<input class="input" data-f="short" maxlength="40" placeholder="ชื่อย่อ" value="' + esc(c.short) + '" aria-label="ชื่อย่อ">' +
+            '<div class="pts-in"><button type="button" class="btn btn-ghost btn-sm" data-step="-1" aria-label="ลดแต้ม">−</button><input class="input center" type="number" min="1" max="100" data-f="points" value="' + c.points + '" aria-label="แต้ม"><button type="button" class="btn btn-ghost btn-sm" data-step="1" aria-label="เพิ่มแต้ม">+</button></div>' +
+            '<input class="input color-in" type="color" data-f="color" value="' + esc(c.color) + '" aria-label="สี">' +
+            '<label class="switch"><input type="checkbox" data-f="active"' + (c.active !== false ? ' checked' : '') + '><i></i></label>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-del aria-label="ลบหมวดหมู่">' + ic('trash') + '</button></div>';
+        }).join('');
+      $$('.ce-row', box).forEach(function (row) {
+        var c = self.cats[+row.dataset.i];
+        $$('[data-f]', row).forEach(function (inp) {
+          inp.oninput = inp.onchange = function () {
+            var f = inp.dataset.f;
+            c[f] = f === 'active' ? inp.checked : f === 'points' ? Number(inp.value) : inp.value;
+            if (f === 'icon' || f === 'color') $('.cicon', row).outerHTML = '<span class="cicon" style="--c:' + esc(c.color) + '">' + UI.art(c.icon) + '</span>';
+            if (f === 'active') row.classList.toggle('off', !inp.checked);
+            self.catShare();
+          };
+        });
+        $$('[data-step]', row).forEach(function (b) {
+          b.onclick = function () { c.points = Math.max(1, Math.min(100, Number(c.points || 0) + Number(b.dataset.step))); $('[data-f=points]', row).value = c.points; self.catShare(); };
+        });
+        $('[data-del]', row).onclick = function () {
+          if (!confirm('ลบหมวด "' + (c.short || c.name || 'ใหม่') + '" ?\n(ถ้ามีรายการที่ใช้หมวดนี้แล้ว ระบบจะปิดใช้งานแทนการลบ)')) return;
+          self.cats.splice(+row.dataset.i, 1); self.catList();
+        };
+      });
+      this.catShare();
+    },
+    // แสดงสัดส่วนแต้มของแต่ละหมวด (เฉพาะที่เปิดใช้งาน)
+    catShare: function () {
+      var act = this.cats.filter(function (c) { return c.active !== false; }), sum = 0;
+      act.forEach(function (c) { sum += Number(c.points) || 0; });
+      $('#catShare').innerHTML = sum ? '<div class="label" style="margin-top:14px">สัดส่วนแต้มของแต่ละหมวด</div><div class="share-bar">' + act.map(function (c) {
+        var p = (Number(c.points) || 0) / sum * 100;
+        return '<span style="width:' + p + '%;background:' + esc(c.color) + '" title="' + esc(c.short || c.name) + ' ' + p.toFixed(0) + '%"></span>';
+      }).join('') + '</div><div class="share-legend">' + act.map(function (c) {
+        return '<span><i style="background:' + esc(c.color) + '"></i>' + esc(c.short || c.name || 'ใหม่') + ' <b>+' + (c.points || 0) + '</b> (' + ((Number(c.points) || 0) / sum * 100).toFixed(0) + '%)</span>';
+      }).join('') + '</div>' : '';
     },
     deptList: function () {
       var self = this;
@@ -1332,7 +1549,7 @@
       var box = $('#certPrev');
       if (!box) return;
       var mk = ($('input[name=pvm]:checked') || {}).value || 'gold';
-      box.innerHTML = '<div class="cert-scale">' + UI.certHtml(this.cert, { name: 'นายตัวอย่าง คนดีศรีท่าหลวง', level: 'ปวช.3', dept: TLD.DEPTS[0] || '', medal: mk, code: 'TLC-CERT-G-00000-PREVIEW', dateText: thDate(today(), true) }, 'pvQr') + '</div>';
+      box.innerHTML = '<div class="cert-scale">' + UI.certHtml(this.cert, { name: 'นายตัวอย่าง ใจดีมีเกียรติ', level: 'ปวช.3', dept: TLD.DEPTS[0] || '', medal: mk, code: 'TLC-CERT-G-00000-PREVIEW', dateText: thDate(today(), true) }, 'pvQr') + '</div>';
       if (this.cert.showQr && $('#pvQr')) Printer.qr($('#pvQr'), 'TLC-CERT-G-00000-PREVIEW');
       this.scale();
     },
@@ -1406,9 +1623,9 @@
       var MAX = (L === 'timeline' ? 7 : L === 'modern' ? 11 : 12) + (t.showChart ? 0 : (L === 'timeline' ? 3 : 4)) + (t.about || t.goal ? 0 : 2), rows = r.deeds.slice(-MAX), from = r.deeds.length - rows.length;
       var photo = !t.showPhoto ? '' : '<div class="pf-photo">' + (t.photo ? '<img src="' + esc(t.photo) + '" alt="" referrerpolicy="no-referrer">' : ic('user')) + '</div>';
       var title = esc(t.title || PF.DEF_TITLE);
-      var head = '<div class="pf-head"><img src="assets/logo-192.png" alt=""><div><h1>' + title + '</h1><p>Good Deeds E-Portfolio · ' + esc(TLD.COLLEGE) + '</p></div></div>';
+      var head = '<div class="pf-head"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt=""><div><h1>' + title + '</h1><p>Good Deeds E-Portfolio · ' + esc(TLD.COLLEGE) + '</p></div></div>';
       var kv = '<dl class="kv"><dt>รหัสนักศึกษา</dt><dd>' + esc(s.id) + '</dd><dt>แผนกวิชา</dt><dd>' + esc(s.dept) + '</dd>' +
-        '<dt>ระดับชั้น</dt><dd>' + esc(s.level) + '</dd><dt>ครูที่ปรึกษา</dt><dd>' + esc(s.advisorName || '-') + '</dd></dl>';
+        '<dt>ระดับชั้น</dt><dd>' + esc(s.level) + '</dd><dt>ครูที่ปรึกษา</dt><dd>' + esc(s.advisorName || '-') + '</dd><dt>ปีการศึกษา</dt><dd>' + (r.year === 'all' ? 'ทุกปีการศึกษา' : esc(r.year || TLD.YEAR.current)) + '</dd></dl>';
       var qr = '<div class="pf-qr"><div class="qrbox" id="' + qrId + '"></div><small>' + esc(r.portfolioCode) + '</small></div>';
       var sum = '<div class="pf-sum"><div><b>' + r.deeds.length + '</b>รายการความดี</div><div><b>' + s.points + '</b>แต้มสะสม</div>' +
         '<div class="md">' + (m ? UI.medalSvg(m.key) : '') + '<span><b>' + (m ? esc(m.name) : '-') + '</b>ระดับเกียรติบัตร</span></div></div>';
@@ -1418,8 +1635,9 @@
       if (t.showChart) {
         var agg = {}, max = 1;
         r.deeds.forEach(function (d) { agg[d.category] = (agg[d.category] || 0) + Number(d.points || 0); });
-        TLD.CATEGORIES.forEach(function (c) { max = Math.max(max, agg[c.id] || 0); });
-        chart = '<div class="pf-chart"><h2>สรุปแต้มตามหมวดหมู่</h2>' + TLD.CATEGORIES.map(function (c) {
+        var pcs = TLD.CATEGORIES.filter(function (c) { return c.active !== false || agg[c.id]; });
+        pcs.forEach(function (c) { max = Math.max(max, agg[c.id] || 0); });
+        chart = '<div class="pf-chart"><h2>สรุปแต้มตามหมวดหมู่</h2>' + pcs.map(function (c) {
           var v = agg[c.id] || 0;
           return '<div class="cr"><span>' + esc(c.short) + '</span><i><em style="width:' + (v / max * 100).toFixed(1) + '%"></em></i><b>' + v + '</b></div>';
         }).join('') + '</div>';
@@ -1442,11 +1660,11 @@
       if (r.deeds.length > MAX) list += '<p class="pf-more">* แสดง ' + MAX + ' รายการล่าสุด จากทั้งหมด ' + r.deeds.length + ' รายการ</p>';
       var sign = !t.showSign ? '' : '<div class="p-sign">' + (cfg.signature ? '<img src="' + esc(cfg.signature) + '" alt="" referrerpolicy="no-referrer">' : '<div style="height:14mm"></div>') +
         '<div class="sig-line"></div>(' + esc(cfg.directorName || '.......................................') + ')<br>' + esc(cfg.directorTitle) + '</div>';
-      var foot = '<div class="foot"><span>ออกโดยระบบคนดีศรีท่าหลวง เมื่อ ' + thDate(today(), true) + '</span><span>ตรวจสอบความถูกต้องได้โดยสแกน QR Code</span></div>';
+      var foot = '<div class="foot"><span>ออกโดยระบบ' + esc(TLD.APP_NAME) + ' เมื่อ ' + thDate(today(), true) + '</span><span>ตรวจสอบความถูกต้องได้โดยสแกน QR Code</span></div>';
       var name = '<div class="pf-name">' + esc(s.name) + '</div>';
       var body;
       if (L === 'modern') {
-        body = '<div class="pf-band">' + photo + '<div class="who"><small>' + title + '</small>' + name + '<div>' + esc(s.dept) + ' · ' + esc(s.level) + ' · รหัส ' + esc(s.id) + '</div></div><img class="lg" src="assets/logo-192.png" alt=""></div>' +
+        body = '<div class="pf-band">' + photo + '<div class="who"><small>' + title + '</small>' + name + '<div>' + esc(s.dept) + ' · ' + esc(s.level) + ' · รหัส ' + esc(s.id) + '</div></div><img class="lg" src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt=""></div>' +
           '<div class="pf-in">' + sum + '<div class="pf-cols"><aside>' + about + chart + '<div class="kvbox">' + kv + '</div>' + qr + '</aside><main>' + list + sign + '</main></div>' + foot + '</div>';
       } else if (L === 'minimal') {
         body = '<div class="pf-top">' + photo + '<div class="who">' + name + '<div class="sub">' + title + '</div>' + kv + '</div>' + qr + '</div>' +
@@ -1484,27 +1702,27 @@
       });
     },
     head: function (title, sub) {
-      return '<div class="ph"><img src="assets/logo-192.png" alt=""><div><h1>' + esc(title) + '</h1><p>' + esc(TLD.COLLEGE) + '</p>' + (sub ? '<p style="color:#555">' + esc(sub) + '</p>' : '') + '</div></div>';
+      return '<div class="ph"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt=""><div><h1>' + esc(title) + '</h1><p>' + esc(TLD.COLLEGE) + '</p>' + (sub ? '<p style="color:#555">' + esc(sub) + '</p>' : '') + '</div></div>';
     },
     printCert: function (cfg, d) {
       var self = this;
       d.dateText = thDate(today(), true);
       this.go(UI.certHtml(cfg, d, 'pQr'), 'landscape', function (a) { if (cfg.showQr) self.qr($('#pQr', a), d.code); });
     },
-    cert: function (sid, medalKey, btn) {
+    cert: function (sid, medalKey, btn, year) {
       var self = this;
       busy(btn, true);
-      API.call('studentReport', { studentId: sid }).then(function (r) {
+      API.call('studentReport', { studentId: sid, year: year || yv(false) }).then(function (r) {
         busy(btn, false);
         var c = r.certs.filter(function (x) { return x.medal === medalKey; })[0];
         if (!c) return toast('ยังไม่ผ่านเกณฑ์เกียรติบัตรระดับนี้', 'bad');
         var s = r.student;
-        self.printCert(S.cfg.cert, { name: s.name, level: s.level, dept: s.dept, medal: medalKey, code: c.code });
+        self.printCert(S.cfg.cert, { name: s.name, level: s.level, dept: s.dept, medal: medalKey, code: c.code, year: r.year });
       }).catch(function (e) { busy(btn, false); handleErr(e); });
     },
-    portfolio: function (sid, btn) {
+    portfolio: function (sid, btn, year) {
       busy(btn, true);
-      API.call('studentReport', { studentId: sid }).then(function (r) {
+      API.call('studentReport', { studentId: sid, year: year || yv(false) }).then(function (r) {
         busy(btn, false);
         PF.print(r, PF.norm(r.portfolio));
       }).catch(function (e) { busy(btn, false); handleErr(e); });
@@ -1514,7 +1732,7 @@
       for (var i = 0; i < list.length; i += per) pages.push(list.slice(i, i + per));
       var html = pages.map(function (pg, pi) {
         return '<div class="card-page">' + pg.map(function (q, j) {
-          return '<div class="idc"><div class="idc-h"><img src="assets/logo-192.png" alt=""><div><b>คนดีศรีท่าหลวง</b><span>' + esc(TLD.COLLEGE) + '</span></div></div>' +
+          return '<div class="idc"><div class="idc-h"><img src="' + esc(UI.logo()) + '" referrerpolicy="no-referrer" alt=""><div><b>' + esc(TLD.APP_NAME) + '</b><span>' + esc(TLD.COLLEGE) + '</span></div></div>' +
             '<div class="idc-b"><div class="idc-info"><div class="idc-name">' + esc(q.name) + '</div><div>รหัส <b>' + esc(q.id) + '</b></div><div>' + esc(q.dept) + '</div><div>' + esc(q.level) + '</div>' +
             '<div class="idc-hint">สแกนเพื่อเข้าสู่ระบบ</div></div><div class="qrbox" id="qc_' + pi + '_' + j + '"></div></div></div>';
         }).join('') + '</div>';
@@ -1525,17 +1743,17 @@
     },
     adminReport: function (s, list) {
       var k = s.kpi;
-      var html = '<div class="paper">' + this.head('รายงานสรุปผลโครงการคนดีศรีท่าหลวง (ทำดีมีเกียรติ)', 'ข้อมูล ณ วันที่ ' + thDate(today(), true)) +
+      var html = '<div class="paper">' + this.head('รายงานสรุปผลโครงการ' + TLD.APP_NAME + ' (' + TLD.APP_SLOGAN + ')', yearText(s.year || yv(true)) + ' · ข้อมูล ณ วันที่ ' + thDate(today(), true)) +
         '<div class="sum"><div><b>' + k.total + '</b>ความดีทั้งหมด</div><div><b>' + k.approved + '</b>อนุมัติแล้ว</div><div><b>' + k.participants + '</b>นักศึกษาเข้าร่วม</div><div><b>' + k.certs.total + '</b>เกียรติบัตร</div></div>' +
         '<p>เกียรติบัตร: เหรียญทอง ' + k.certs.gold + ' · เหรียญเงิน ' + k.certs.silver + ' · เหรียญทองแดง ' + k.certs.bronze + ' | รอตรวจสอบ ' + k.pending + ' · ส่งกลับแก้ไข ' + k.returned + '</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5mm"><div><h2>แยกตามแผนกวิชา</h2><table><thead><tr><th>แผนกวิชา</th><th>ครั้ง</th><th>แต้ม</th></tr></thead><tbody>' +
         Object.keys(s.dept).map(function (d) { return '<tr><td>' + esc(d) + '</td><td>' + s.dept[d].count + '</td><td>' + s.dept[d].points + '</td></tr>'; }).join('') +
         '</tbody></table></div><div><h2>แยกตามหมวดหมู่</h2><table><thead><tr><th>หมวดหมู่</th><th>ครั้ง</th><th>แต้ม</th></tr></thead><tbody>' +
-        TLD.CATEGORIES.map(function (c) { return '<tr><td>' + esc(c.short) + '</td><td>' + s.cat[c.id].count + '</td><td>' + s.cat[c.id].points + '</td></tr>'; }).join('') +
+        usedCats(s.cat).map(function (c) { return '<tr><td>' + esc(c.short) + '</td><td>' + s.cat[c.id].count + '</td><td>' + s.cat[c.id].points + '</td></tr>'; }).join('') +
         '</tbody></table></div></div><h2>รายการตามตัวกรอง (' + list.length + ' รายการ' + (list.length > 25 ? ', แสดง 25 รายการแรก' : '') + ')</h2>' +
         '<table><thead><tr><th>วันที่</th><th>นักศึกษา</th><th>แผนก</th><th>หมวดหมู่</th><th>แต้ม</th><th>สถานะ</th></tr></thead><tbody>' +
         list.slice(0, 25).map(function (d) { return '<tr><td>' + thDate(d.date) + '</td><td>' + esc(d.studentName) + '</td><td>' + esc(d.dept) + '</td><td>' + esc(cat(d.category).short) + '</td><td>' + d.points + '</td><td>' + esc(TLD.STATUS[d.status]) + '</td></tr>'; }).join('') +
-        '</tbody></table><div class="foot"><span>ระบบคนดีศรีท่าหลวง · ' + esc(TLD.COLLEGE) + '</span><span>ลงชื่อ ........................................ ผู้รายงาน</span></div></div>';
+        '</tbody></table><div class="foot"><span>ระบบ' + esc(TLD.APP_NAME) + ' · ' + esc(TLD.COLLEGE) + '</span><span>ลงชื่อ ........................................ ผู้รายงาน</span></div></div>';
       this.go(html, 'portrait');
     }
   };

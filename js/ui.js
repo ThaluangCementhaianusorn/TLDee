@@ -99,7 +99,7 @@
       '<circle cx="100" cy="100" r="41" fill="none" stroke="' + c.light + '" stroke-width="1.6"/>' +
       '<defs><path id="' + uid + '" d="M100,100 m-51,0 a51,51 0 1,1 102,0 a51,51 0 1,1 -102,0"/></defs>' +
       '<text font-family="Kanit,sans-serif" font-size="11" font-weight="600" fill="' + c.light + '">' +
-      '<textPath href="#' + uid + '" textLength="316" lengthAdjust="spacing">★ คนดีศรีท่าหลวง ★ ทำดีมีเกียรติ ★ วท.ท่าหลวงซิเมนต์ไทยอนุสรณ์</textPath></text>' +
+      '<textPath href="#' + uid + '" textLength="316" lengthAdjust="spacing">' + esc(sealText()) + '</textPath></text>' +
       '<path d="' + STAR + '" transform="translate(100 86) scale(2.5) translate(-24 -34)" fill="' + c.light + '"/>' +
       '<text x="100" y="127" text-anchor="middle" font-family="Kanit,sans-serif" font-size="19" font-weight="700" fill="' + c.light + '">' + short + '</text>' +
       '<path d="M52 72a58 58 0 0 1 40-30" stroke="#fff" stroke-opacity=".35" stroke-width="4" fill="none" stroke-linecap="round"/></svg>';
@@ -125,12 +125,12 @@
   function certHtml(cfg, d, qrId) {
     var m = TLD.medalByKey(d.medal) || TLD.MEDALS[0];
     var dir = cfg.directorName || (window.CONFIG && CONFIG.DIRECTOR_NAME) || '';
-    var vars = { name: d.name, level: d.level, dept: d.dept, medal: m.full, min: m.min, title: m.title };
+    var vars = { name: d.name, level: d.level, dept: d.dept, medal: m.full, min: m.min, title: m.title, year: d.year || (TLD.YEAR && TLD.YEAR.current) || '' };
     var corners = cfg.template === 'modern' || cfg.template === 'thai' ? '' : corner('tl') + corner('tr') + corner('bl') + corner('br');
     return '<div class="cert t-' + esc(cfg.template) + ' m-' + m.key + '">' + corners +
-      '<img class="wm" src="assets/logo-512.png" alt="">' +
+      '<img class="wm" src="' + esc(logo(true)) + '" alt="" referrerpolicy="no-referrer">' +
       '<div class="cert-in">' +
-      '<img class="logo" src="assets/logo-512.png" alt="">' +
+      '<img class="logo" src="' + esc(logo(true)) + '" alt="" referrerpolicy="no-referrer">' +
       '<div class="college">' + esc(TLD.COLLEGE) + '</div>' +
       '<div class="ctitle">' + esc(cfg.title) + '</div>' +
       '<div class="csub">' + esc(cfg.subtitle) + '</div>' +
@@ -140,7 +140,7 @@
       '<div class="cach">' + fill(cfg.achievement, vars) + '</div>' +
       '<div class="creason">' + fill(cfg.reason, vars) + '</div>' +
       '<div class="cbless">' + esc(cfg.blessing) + '</div>' +
-      '<div class="cdate">ให้ไว้ ณ วันที่ ' + esc(d.dateText) + '</div>' +
+      '<div class="cdate">' + (vars.year ? 'ประจำปีการศึกษา ' + esc(vars.year) + ' · ' : '') + 'ให้ไว้ ณ วันที่ ' + esc(d.dateText) + '</div>' +
       '<div class="sigs"><div class="sig">' +
       (cfg.signature ? '<img class="sig-img" src="' + esc(cfg.signature) + '" alt="ลายมือชื่อ" referrerpolicy="no-referrer">' : '<div class="sig-space"></div>') +
       '<div class="sig-line"></div><div class="sig-name">(' + esc(dir || '.......................................................') + ')</div>' +
@@ -150,5 +150,8 @@
       '</div>';
   }
 
-  window.UI = { ic: ic, medalSvg: medalSvg, sealSvg: sealSvg, certHtml: certHtml, esc: esc, MC: MC };
+  // โลโก้สถานศึกษา (อัปโหลดได้ในหน้าตั้งค่า) / ข้อความรอบตราประทับ
+  function logo(big) { return (TLD.BRAND && TLD.BRAND.logo) || (big ? 'assets/logo-512.png' : 'assets/logo-192.png'); }
+  function sealText() { var b = TLD.BRAND || {}; return '★ ' + (b.appName || '') + ' ★ ' + (b.slogan || '') + ' ★ ' + (b.appName || '') + ' ★ ' + (b.slogan || ''); }
+  window.UI = { logo: logo, ic: ic, medalSvg: medalSvg, sealSvg: sealSvg, certHtml: certHtml, esc: esc, MC: MC };
 })();

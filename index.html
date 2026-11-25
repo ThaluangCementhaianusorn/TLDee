@@ -6,7 +6,7 @@
   <title>คนดีศรีท่าหลวง (ทำดีมีเกียรติ) | วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์</title>
   <meta name="description" content="ระบบจัดเก็บผลงานผู้เรียนด้านคุณธรรม จริยธรรม และจิตอาสา วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์">
   <meta name="theme-color" content="#8B1E24">
-  <link rel="icon" type="image/png" href="assets/logo-192.png">
+  <link rel="icon" type="image/png" href="assets/logo-192.png" id="favicon">
   <link rel="apple-touch-icon" href="assets/logo-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,10 +18,10 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="#/" aria-label="หน้าแรก">
-        <img src="assets/logo-192.png" alt="ตราวิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์" width="56" height="56">
+        <img src="assets/logo-192.png" alt="ตราสถานศึกษา" width="56" height="56" data-logo>
         <span class="brand-text">
-          <b>คนดีศรีท่าหลวง</b>
-          <small>ทำดีมีเกียรติ · วท.ท่าหลวงซิเมนต์ไทยอนุสรณ์</small>
+          <b id="bName">คนดีศรีท่าหลวง</b>
+          <small id="bSub">ทำดีมีเกียรติ · วท.ท่าหลวงซิเมนต์ไทยอนุสรณ์</small>
         </span>
       </a>
       <span class="live" id="live" title="สถานะการเชื่อมต่อ"><i></i><span>เรียลไทม์</span></span>
@@ -36,10 +36,10 @@
   <main id="app" class="container" tabindex="-1"></main>
 
   <footer class="footer">
-    <img src="assets/logo-192.png" alt="" width="44" height="44">
+    <img src="assets/logo-192.png" alt="" width="44" height="44" data-logo>
     <div>
-      <b>ระบบคนดีศรีท่าหลวง (ทำดีมีเกียรติ)</b><br>
-      วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์ · สำนักงานคณะกรรมการการอาชีวศึกษา
+      <b id="fName">ระบบคนดีศรีท่าหลวง (ทำดีมีเกียรติ)</b><br>
+      <span id="fCollege">วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์</span> · สำนักงานคณะกรรมการการอาชีวศึกษา
     </div>
   </footer>
 

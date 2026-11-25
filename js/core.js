@@ -6,18 +6,33 @@
 var TLD = (function () {
   'use strict';
 
-  var COLLEGE = 'วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์';
-  var APP_NAME = 'คนดีศรีท่าหลวง';
-  var APP_SLOGAN = 'ทำดีมีเกียรติ';
+  // ชื่อสถานศึกษา / ชื่อแอป (ผู้ดูแลระบบเปลี่ยนได้ในเมนู ตั้งค่าระบบ)
+  var DEFAULT_BRAND = { college: 'วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์', appName: 'คนดีศรีท่าหลวง', slogan: 'ทำดีมีเกียรติ', logo: '' };
+  var BRAND = JSON.parse(JSON.stringify(DEFAULT_BRAND));
+  // ธีมสีของระบบ
+  var DEFAULT_THEME = { primary: '#8B1E24', secondary: '#14244B', accent: '#D99B26' };
+  var THEME = JSON.parse(JSON.stringify(DEFAULT_THEME));
 
-  // หมวดหมู่ความดีและค่าคะแนน (5 ด้าน) — icon = ชื่อไอคอน SVG ใน app.js
-  var CATEGORIES = [
-    { id: 'fame',       name: 'สร้างชื่อเสียงและคุณประโยชน์แก่สถาบัน', short: 'สร้างชื่อเสียง',     points: 3, icon: 'trophy', color: '#C28411' },
-    { id: 'honest',     name: 'ความซื่อสัตย์สุจริต (เก็บของได้ส่งคืน)', short: 'ซื่อสัตย์สุจริต',    points: 2, icon: 'gem',    color: '#22396F' },
-    { id: 'volunteer',  name: 'จิตอาสาพัฒนาวิทยาลัยและชุมชน',        short: 'จิตอาสา',          points: 2, icon: 'sprout', color: '#1E7F48' },
-    { id: 'grateful',   name: 'ความกตัญญูและช่วยเหลือผู้อื่น',          short: 'กตัญญู/ช่วยเหลือ',   points: 1, icon: 'heart',  color: '#8B1E24' },
-    { id: 'discipline', name: 'รักษาระเบียบวินัยและสิ่งแวดล้อม',        short: 'วินัย/สิ่งแวดล้อม',  points: 1, icon: 'leaf',   color: '#2F7FA3' }
+  // หมวดหมู่ความดีและค่าคะแนน — ผู้ดูแลระบบปรับแต้ม/เพิ่มหมวด/ปิดใช้งานได้ (icon = ชื่อไอคอนภาพใน art.js)
+  var DEFAULT_CATS = [
+    { id: 'fame',       name: 'สร้างชื่อเสียงและคุณประโยชน์แก่สถาบัน', short: 'สร้างชื่อเสียง',     points: 3, icon: 'trophy', color: '#C28411', active: true },
+    { id: 'honest',     name: 'ความซื่อสัตย์สุจริต (เก็บของได้ส่งคืน)', short: 'ซื่อสัตย์สุจริต',    points: 2, icon: 'gem',    color: '#22396F', active: true },
+    { id: 'volunteer',  name: 'จิตอาสาพัฒนาวิทยาลัยและชุมชน',        short: 'จิตอาสา',          points: 2, icon: 'sprout', color: '#1E7F48', active: true },
+    { id: 'grateful',   name: 'ความกตัญญูและช่วยเหลือผู้อื่น',          short: 'กตัญญู/ช่วยเหลือ',   points: 1, icon: 'heart',  color: '#8B1E24', active: true },
+    { id: 'discipline', name: 'รักษาระเบียบวินัยและสิ่งแวดล้อม',        short: 'วินัย/สิ่งแวดล้อม',  points: 1, icon: 'leaf',   color: '#2F7FA3', active: true }
   ];
+  var CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATS));
+  var CAT_ICONS = ['trophy', 'gem', 'sprout', 'heart', 'leaf', 'star', 'award', 'book', 'users', 'shield', 'check', 'user'];
+  function activeCats() { return CATEGORIES.filter(function (c) { return c.active !== false; }); }
+
+  // ปีการศึกษา (พ.ศ.) — เริ่ม 16 พฤษภาคม
+  function academicYear(dateStr) {
+    var d = dateStr ? new Date(String(dateStr).slice(0, 10) + 'T00:00:00') : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+    var y = d.getFullYear() + 543, m = d.getMonth() + 1, day = d.getDate();
+    return (m > 5 || (m === 5 && day >= 16)) ? y : y - 1;
+  }
+  var YEAR = { current: academicYear() };
 
   // แผนกวิชาเริ่มต้น (ผู้ดูแลระบบเพิ่ม/แก้ไขได้ในเมนู ตั้งค่าระบบ)
   var DEFAULT_DEPTS = [
@@ -33,7 +48,7 @@ var TLD = (function () {
   var MEDALS = [
     { key: 'bronze', code: 'B', name: 'เหรียญทองแดง', full: 'ระดับเหรียญทองแดง', min: 40, title: 'ผู้มีความประพฤติดี มีจิตอาสา' },
     { key: 'silver', code: 'S', name: 'เหรียญเงิน',   full: 'ระดับเหรียญเงิน',   min: 60, title: 'แบบอย่างที่ดีด้านคุณธรรมจริยธรรม' },
-    { key: 'gold',   code: 'G', name: 'เหรียญทอง',    full: 'ระดับเหรียญทอง (คนดีศรีท่าหลวง)', min: 80, title: 'สุดยอดเยาวชนต้นแบบ ทำดีมีเกียรติ' }
+    { key: 'gold',   code: 'G', name: 'เหรียญทอง',    full: 'ระดับเหรียญทอง', min: 80, title: 'สุดยอดเยาวชนต้นแบบ ทำดีมีเกียรติ' }
   ];
 
   // ค่าเริ่มต้นของเกียรติบัตร (แก้ไขได้ในเมนู ตั้งค่าระบบ > เกียรติบัตร)
@@ -67,7 +82,7 @@ var TLD = (function () {
     users: ['id', 'name', 'role', 'dept', 'level', 'advisorId', 'passHash', 'active', 'createdAt', 'qrVer', 'portfolio'],
     deeds: ['id', 'studentId', 'studentName', 'dept', 'level', 'date', 'category', 'points', 'detail', 'impact',
             'learned', 'imageUrl', 'status', 'recordedById', 'recordedByName', 'reviewNote', 'reviewedBy',
-            'createdAt', 'updatedAt'],
+            'createdAt', 'updatedAt', 'year'],
     settings: ['id', 'value', 'updatedAt']
   };
 
@@ -117,9 +132,11 @@ var TLD = (function () {
   function unlockedMedals(points) { return MEDALS.filter(function (m) { return points >= m.min; }); }
   function hashPassword(id, pw) { return sha256('tldee|' + String(id) + '|' + String(pw)); }
   function sign(secret, s) { return sha256(secret + '|' + s).slice(0, 8).toUpperCase(); }
-  function certCode(secret, studentId, medalKey) {
+  // รหัสเกียรติบัตรแยกตามปีการศึกษา: TLC-CERT-<ระดับ>-<ปี>-<รหัสนักศึกษา>-<ลายเซ็น>
+  function certCode(secret, studentId, medalKey, year) {
     var m = medalByKey(medalKey);
-    return 'TLC-CERT-' + m.code + '-' + studentId + '-' + sign(secret, 'CERT|' + m.code + '|' + studentId);
+    if (!year) return 'TLC-CERT-' + m.code + '-' + studentId + '-' + sign(secret, 'CERT|' + m.code + '|' + studentId);
+    return 'TLC-CERT-' + m.code + '-' + year + '-' + studentId + '-' + sign(secret, 'CERT|' + m.code + '|' + year + '|' + studentId);
   }
   function portCode(secret, studentId, ymd) {
     return 'TLC-PORT-' + studentId + '-' + ymd + '-' + sign(secret, 'PORT|' + studentId + '|' + ymd);
@@ -136,6 +153,15 @@ var TLD = (function () {
     DEPTS.splice.apply(DEPTS, [0, DEPTS.length].concat(d));
     var mins = s.medals || DEFAULT_MINS;
     MEDALS.forEach(function (m) { m.min = Number(mins[m.key]) || DEFAULT_MINS[m.key]; });
+    var cats = (s.cats && s.cats.length) ? s.cats : DEFAULT_CATS;
+    CATEGORIES.splice.apply(CATEGORIES, [0, CATEGORIES.length].concat(cats.map(function (c) { return JSON.parse(JSON.stringify(c)); })));
+    var b = s.brand || {};
+    Object.keys(DEFAULT_BRAND).forEach(function (k) { BRAND[k] = b[k] ? b[k] : DEFAULT_BRAND[k]; });
+    var t = s.theme || {};
+    Object.keys(DEFAULT_THEME).forEach(function (k) { THEME[k] = /^#[0-9a-fA-F]{6}$/.test(t[k] || '') ? t[k] : DEFAULT_THEME[k]; });
+    YEAR.current = Number(s.year && s.year.current) || academicYear();
+    medalByKey('gold').full = 'ระดับเหรียญทอง (' + BRAND.appName + ')';
+    if (typeof API_EXPORT !== 'undefined') { API_EXPORT.COLLEGE = BRAND.college; API_EXPORT.APP_NAME = BRAND.appName; API_EXPORT.APP_SLOGAN = BRAND.slogan; }
   }
   function certSettings(s) {
     var c = {}, src = (s && s.cert) || {};
@@ -201,14 +227,30 @@ var TLD = (function () {
     function publicUser(u) {
       return { id: u.id, name: u.name, role: u.role, dept: u.dept, level: u.level, advisorId: u.advisorId, active: isActive(u) };
     }
-    function pointsMap() {
-      var m = {};
-      deeds().forEach(function (d) { if (d.status === 'approved') m[d.studentId] = (m[d.studentId] || 0) + Number(d.points || 0); });
+    /* ---------- ปีการศึกษา ---------- */
+    function curYear() { return YEAR.current; }
+    function deedYear(d) { return Number(d.year) || academicYear(d.date || d.createdAt); }
+    // ปีที่ร้องขอ: ตัวเลข พ.ศ. หรือ 'all' (ทุกปี) — ค่าเริ่มต้น = ปีการศึกษาปัจจุบัน
+    function yr(p) {
+      var y = p && p.year;
+      if (y === 'all') return 'all';
+      y = Number(y);
+      return y >= 2400 && y <= 2700 ? y : curYear();
+    }
+    function inYear(d, y) { return y === 'all' || deedYear(d) === y; }
+    function yearsList() {
+      var s = {}; s[curYear()] = 1;
+      deeds().forEach(function (d) { s[deedYear(d)] = 1; });
+      return Object.keys(s).map(Number).sort(function (a, b) { return b - a; });
+    }
+    function pointsMap(y) {
+      var m = {}; y = y || curYear();
+      deeds().forEach(function (d) { if (d.status === 'approved' && inYear(d, y)) m[d.studentId] = (m[d.studentId] || 0) + Number(d.points || 0); });
       return m;
     }
-    function countMap() {
-      var m = {};
-      deeds().forEach(function (d) { if (d.status === 'approved') m[d.studentId] = (m[d.studentId] || 0) + 1; });
+    function countMap(y) {
+      var m = {}; y = y || curYear();
+      deeds().forEach(function (d) { if (d.status === 'approved' && inYear(d, y)) m[d.studentId] = (m[d.studentId] || 0) + 1; });
       return m;
     }
     function teacherNames() {
@@ -224,8 +266,8 @@ var TLD = (function () {
         medal: md ? md.key : '', next: nx ? nx.key : '', need: nx ? nx.min - p : 0
       };
     }
-    function students() {
-      var pts = pointsMap(), cnt = countMap(), tn = teacherNames();
+    function students(y) {
+      var pts = pointsMap(y), cnt = countMap(y), tn = teacherNames();
       return users().filter(function (u) { return u.role === 'student' && isActive(u); })
         .map(function (u) { return studentView(u, pts, cnt, tn); });
     }
@@ -234,7 +276,7 @@ var TLD = (function () {
         id: d.id, studentId: d.studentId, studentName: d.studentName, dept: d.dept, level: d.level, date: d.date,
         category: d.category, points: Number(d.points || 0), detail: d.detail, impact: d.impact, learned: d.learned,
         imageUrl: d.imageUrl, status: d.status, recordedByName: d.recordedByName, reviewNote: d.reviewNote,
-        reviewedBy: d.reviewedBy, createdAt: d.createdAt, updatedAt: d.updatedAt
+        reviewedBy: d.reviewedBy, createdAt: d.createdAt, updatedAt: d.updatedAt, year: deedYear(d)
       };
     }
     function byNewest(a, b) {
@@ -279,7 +321,11 @@ var TLD = (function () {
             .map(function (u) { return { id: u.id, name: u.name, dept: u.dept }; }),
           depts: DEPTS.slice(),
           medals: { bronze: medalByKey('bronze').min, silver: medalByKey('silver').min, gold: medalByKey('gold').min },
-          cert: certSettings(SETTINGS)
+          cert: certSettings(SETTINGS),
+          cats: CATEGORIES.map(function (c) { return JSON.parse(JSON.stringify(c)); }),
+          brand: JSON.parse(JSON.stringify(BRAND)),
+          theme: JSON.parse(JSON.stringify(THEME)),
+          year: { current: curYear(), list: yearsList() }
         };
       },
 
@@ -305,6 +351,48 @@ var TLD = (function () {
           if (!TEMPLATES.some(function (t) { return t.id === c.template; })) c.template = 'classic';
           if (c.signature.indexOf('data:image') === 0) c.signature = env.saveImage(c.signature, 'signature_' + Date.now());
           setSetting('cert', c);
+        }
+        if (p.cats) {
+          var ids = {}, cats = [];
+          p.cats.forEach(function (c, i) {
+            var name = str(c.name, 120), short = str(c.short, 40) || name.slice(0, 30), pts = Math.round(Number(c.points));
+            if (!name) fail('หมวดหมู่ลำดับที่ ' + (i + 1) + ' ยังไม่มีชื่อ');
+            if (!(pts >= 1 && pts <= 100)) fail('แต้มของหมวด "' + short + '" ต้องอยู่ระหว่าง 1–100');
+            var id = /^[a-z0-9_]{2,24}$/.test(str(c.id)) ? str(c.id) : 'c' + Date.now().toString(36) + i;
+            if (ids[id]) id = id + i;
+            ids[id] = 1;
+            cats.push({ id: id, name: name, short: short, points: pts,
+              icon: CAT_ICONS.indexOf(c.icon) >= 0 ? c.icon : 'star',
+              color: /^#[0-9a-fA-F]{6}$/.test(str(c.color)) ? str(c.color) : '#14244B',
+              active: c.active !== false });
+          });
+          // หมวดที่เคยมีรายการบันทึกแล้วห้ามลบ (ให้ปิดใช้งานแทน) เพื่อไม่ให้ประวัติเสียหาย
+          var used = {}; deeds().forEach(function (d) { used[d.category] = 1; });
+          CATEGORIES.forEach(function (old) {
+            if (!ids[old.id] && used[old.id]) { var k = JSON.parse(JSON.stringify(old)); k.active = false; cats.push(k); }
+          });
+          if (!cats.some(function (c) { return c.active; })) fail('ต้องมีหมวดหมู่ที่เปิดใช้งานอย่างน้อย 1 หมวด');
+          setSetting('cats', cats);
+        }
+        if (p.brand) {
+          var br = { college: str(p.brand.college, 150), appName: str(p.brand.appName, 60), slogan: str(p.brand.slogan, 80), logo: str(p.brand.logo, 400000) };
+          if (!br.college || !br.appName) fail('กรุณากรอกชื่อสถานศึกษาและชื่อระบบ');
+          if (br.logo.indexOf('data:image') === 0) br.logo = env.saveImage(br.logo, 'logo_' + Date.now());
+          setSetting('brand', br);
+        }
+        if (p.theme) {
+          var th = {};
+          Object.keys(DEFAULT_THEME).forEach(function (k) {
+            var v = str(p.theme[k]);
+            if (!/^#[0-9a-fA-F]{6}$/.test(v)) fail('รหัสสีไม่ถูกต้อง');
+            th[k] = v;
+          });
+          setSetting('theme', th);
+        }
+        if (p.year) {
+          var cy = Math.round(Number(p.year.current));
+          if (!(cy >= 2500 && cy <= 2700)) fail('ปีการศึกษาไม่ถูกต้อง (ใช้ พ.ศ. เช่น 2569)');
+          setSetting('year', { current: cy });
         }
         db.bump();
         loadSettings();
@@ -375,9 +463,10 @@ var TLD = (function () {
         return { done: true };
       },
 
-      publicStats: function () {
-        var approved = deeds().filter(function (d) { return d.status === 'approved'; });
-        var studs = students();
+      publicStats: function (p) {
+        var y = yr(p);
+        var approved = deeds().filter(function (d) { return d.status === 'approved' && inYear(d, y); });
+        var studs = students(y);
         var participants = {};
         approved.forEach(function (d) { participants[d.studentId] = 1; });
         var total = 0; approved.forEach(function (d) { total += Number(d.points || 0); });
@@ -401,7 +490,8 @@ var TLD = (function () {
             var f = feedItem(d); delete f.reviewNote; delete f.studentId; delete f.impact; delete f.learned; return f;
           }),
           deptRank: deptRank,
-          dept: agg.dept, cat: agg.cat
+          dept: agg.dept, cat: agg.cat,
+          year: y, years: yearsList()
         };
       },
 
@@ -411,34 +501,45 @@ var TLD = (function () {
         if (parts.length < 5 || parts[0] !== 'TLC') return { valid: false, code: code };
         var secret = env.secret();
         if (parts[1] === 'CERT') {
-          var stu = findUser(parts.slice(3, -1).join('-')), m = medalByKey(parts[2]);
-          if (!stu || !m || certCode(secret, stu.id, m.key).toUpperCase() !== code) return { valid: false, code: code };
-          var pts = pointsMap()[stu.id] || 0;
+          var m = medalByKey(parts[2]), stu = null, cy = 0;
+          if (m && parts.length >= 6 && /^\d{4}$/.test(parts[3])) {          // รูปแบบใหม่ (มีปีการศึกษา)
+            cy = Number(parts[3]); stu = findUser(parts.slice(4, -1).join('-'));
+            if (stu && certCode(secret, stu.id, m.key, cy).toUpperCase() !== code) stu = null;
+          }
+          if (!stu && m) {                                                // รูปแบบเดิม (ไม่มีปี)
+            cy = 0; stu = findUser(parts.slice(3, -1).join('-'));
+            if (stu && certCode(secret, stu.id, m.key).toUpperCase() !== code) stu = null;
+          }
+          if (!stu) return { valid: false, code: code };
+          var pts = pointsMap(cy || 'all')[stu.id] || 0;
           return { valid: pts >= m.min, revoked: pts < m.min, type: 'cert', code: code, name: stu.name, dept: stu.dept,
-                   level: stu.level, medal: m.key, points: pts };
+                   level: stu.level, medal: m.key, points: pts, year: cy || '' };
         }
         if (parts[1] === 'PORT') {
           var ymd = parts[parts.length - 2], st2 = findUser(parts.slice(2, -2).join('-'));
           if (!st2 || portCode(secret, st2.id, ymd).toUpperCase() !== code) return { valid: false, code: code };
-          var pts2 = pointsMap()[st2.id] || 0, md = medalOf(pts2);
+          var pts2 = pointsMap('all')[st2.id] || 0, md = medalOf(pointsMap()[st2.id] || 0);
           return { valid: true, type: 'port', code: code, name: st2.name, dept: st2.dept, level: st2.level,
-                   points: pts2, medal: md ? md.key : '', count: countMap()[st2.id] || 0,
+                   points: pts2, medal: md ? md.key : '', count: countMap('all')[st2.id] || 0,
                    issued: ymd.slice(0, 4) + '-' + ymd.slice(4, 6) + '-' + ymd.slice(6, 8) };
         }
         return { valid: false, code: code };
       },
 
       myDeeds: function (p) {
-        var u = auth(p, ['student']);
-        var list = deeds().filter(function (d) { return d.studentId === u.id; }).sort(byNewest).map(feedItem);
-        var v = studentView(u, pointsMap(), countMap(), teacherNames());
-        return { student: v, deeds: list };
+        var u = auth(p, ['student']), y = yr(p);
+        var list = deeds().filter(function (d) { return d.studentId === u.id && inYear(d, y); }).sort(byNewest).map(feedItem);
+        var v = studentView(u, pointsMap(y), countMap(y), teacherNames());
+        var mine = {}; mine[curYear()] = 1;
+        deeds().forEach(function (d) { if (d.studentId === u.id) mine[deedYear(d)] = 1; });
+        return { student: v, deeds: list, year: y, current: curYear(),
+                 years: Object.keys(mine).map(Number).sort(function (a, b) { return b - a; }) };
       },
 
       submitDeed: function (p) {
         var u = auth(p, ['student']);
         var c = catById(p.category);
-        if (!c) fail('กรุณาเลือกหมวดหมู่ความดี');
+        if (!c || c.active === false) fail('กรุณาเลือกหมวดหมู่ความดี');
         if (!validDate(p.date)) fail('กรุณาระบุวันที่ทำความดี');
         var detail = str(p.detail, 2000);
         if (detail.length < 5) fail('กรุณาอธิบายรายละเอียดการทำความดี');
@@ -459,7 +560,7 @@ var TLD = (function () {
           id: newId('D'), studentId: u.id, studentName: u.name, dept: u.dept, level: u.level, date: p.date,
           category: c.id, points: c.points, detail: detail, impact: str(p.impact, 1000), learned: str(p.learned, 1000),
           imageUrl: img, status: 'pending', recordedById: '', recordedByName: '', reviewNote: '', reviewedBy: '',
-          createdAt: t, updatedAt: t
+          createdAt: t, updatedAt: t, year: String(curYear())
         };
         db.insert('deeds', rec); db.bump();
         return { id: rec.id };
@@ -467,7 +568,7 @@ var TLD = (function () {
 
       students: function (p) {
         var u = auth(p, ['teacher', 'admin']);
-        var list = students();
+        var list = students(yr(p));
         if (p.mine) list = list.filter(function (s) { return s.advisorId === u.id; });
         return list.sort(function (a, b) { return b.points - a.points || String(a.id).localeCompare(String(b.id)); });
       },
@@ -477,7 +578,7 @@ var TLD = (function () {
         var s = findUser(p.studentId);
         if (!s || s.role !== 'student') fail('ไม่พบนักศึกษา');
         var c = catById(p.category);
-        if (!c) fail('กรุณาเลือกหมวดหมู่ความดี');
+        if (!c || c.active === false) fail('กรุณาเลือกหมวดหมู่ความดี');
         var detail = str(p.detail, 2000);
         if (detail.length < 5) fail('กรุณากรอกพฤติกรรมที่พบเห็น');
         var date = validDate(p.date) ? p.date : new Date().toISOString().slice(0, 10);
@@ -489,7 +590,7 @@ var TLD = (function () {
           id: newId('D'), studentId: s.id, studentName: s.name, dept: s.dept, level: s.level, date: date,
           category: c.id, points: c.points, detail: detail, impact: str(p.impact, 1000), learned: '', imageUrl: img,
           status: 'approved', recordedById: t.id, recordedByName: t.name, reviewNote: '', reviewedBy: t.name,
-          createdAt: now, updatedAt: now
+          createdAt: now, updatedAt: now, year: String(curYear())
         });
         db.bump();
         var after = before + c.points, mb = medalOf(before), ma = medalOf(after);
@@ -498,7 +599,8 @@ var TLD = (function () {
 
       allDeeds: function (p) {
         auth(p, ['admin']);
-        return deeds().slice().sort(byNewest).map(feedItem);
+        var y = yr(p);
+        return deeds().filter(function (d) { return inYear(d, y); }).sort(byNewest).map(feedItem);
       },
 
       review: function (p) {
@@ -507,17 +609,18 @@ var TLD = (function () {
         if (!d) fail('ไม่พบรายการ');
         if (['approved', 'returned', 'pending'].indexOf(p.status) < 0) fail('สถานะไม่ถูกต้อง');
         if (p.status === 'returned' && str(p.note).length < 2) fail('กรุณาระบุเหตุผลที่ส่งกลับแก้ไข');
-        var before = pointsMap()[d.studentId] || 0;
-        db.update('deeds', d.id, { status: p.status, reviewNote: str(p.note, 500), reviewedBy: a.name, updatedAt: nowIso() });
+        var dy = deedYear(d), before = pointsMap(dy)[d.studentId] || 0;
+        db.update('deeds', d.id, { status: p.status, reviewNote: str(p.note, 500), reviewedBy: a.name, updatedAt: nowIso(), year: String(dy) });
         db.bump();
-        var after = pointsMap()[d.studentId] || 0, mb = medalOf(before), ma = medalOf(after);
+        var after = pointsMap(dy)[d.studentId] || 0, mb = medalOf(before), ma = medalOf(after);
         return { unlocked: (ma && (!mb || mb.key !== ma.key) && after > before) ? ma.key : '', studentName: d.studentName };
       },
 
       adminStats: function (p) {
         auth(p, ['admin']);
-        var all = deeds(), approved = all.filter(function (d) { return d.status === 'approved'; });
-        var studs = students(), part = {};
+        var y = yr(p);
+        var all = deeds().filter(function (d) { return inYear(d, y); }), approved = all.filter(function (d) { return d.status === 'approved'; });
+        var studs = students(y), part = {};
         approved.forEach(function (d) { part[d.studentId] = 1; });
         var agg = aggregate(approved);
         return {
@@ -527,7 +630,7 @@ var TLD = (function () {
             returned: all.filter(function (d) { return d.status === 'returned'; }).length,
             participants: Object.keys(part).length, students: studs.length, certs: certCounts(studs)
           },
-          dept: agg.dept, cat: agg.cat
+          dept: agg.dept, cat: agg.cat, year: y, years: yearsList()
         };
       },
 
@@ -604,13 +707,14 @@ var TLD = (function () {
         var sid = u.role === 'student' ? u.id : str(p.studentId);
         var s = findUser(sid);
         if (!s || s.role !== 'student') fail('ไม่พบนักศึกษา');
-        var v = studentView(s, pointsMap(), countMap(), teacherNames());
+        var y = yr(p);
+        var v = studentView(s, pointsMap(y), countMap(y), teacherNames());
         var secret = env.secret(), ymd = ymdNow();
         return {
-          student: v,
-          deeds: deeds().filter(function (d) { return d.studentId === s.id && d.status === 'approved'; })
+          student: v, year: y,
+          deeds: deeds().filter(function (d) { return d.studentId === s.id && d.status === 'approved' && inYear(d, y); })
             .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }).map(feedItem),
-          certs: unlockedMedals(v.points).map(function (m) { return { medal: m.key, code: certCode(secret, s.id, m.key) }; }),
+          certs: y === 'all' ? [] : unlockedMedals(v.points).map(function (m) { return { medal: m.key, code: certCode(secret, s.id, m.key, y) }; }),
           portfolioCode: portCode(secret, s.id, ymd),
           portfolio: portfolioOf(s)
         };
@@ -661,13 +765,16 @@ var TLD = (function () {
     return { handle: handle, isWrite: function (a) { return WRITES.indexOf(a) >= 0; } };
   }
 
-  return {
-    COLLEGE: COLLEGE, APP_NAME: APP_NAME, APP_SLOGAN: APP_SLOGAN, CATEGORIES: CATEGORIES, DEPTS: DEPTS,
+  var API_EXPORT = {
+    COLLEGE: BRAND.college, APP_NAME: BRAND.appName, APP_SLOGAN: BRAND.slogan, BRAND: BRAND, THEME: THEME, YEAR: YEAR,
+    CATEGORIES: CATEGORIES, CAT_ICONS: CAT_ICONS, activeCats: activeCats, academicYear: academicYear, DEPTS: DEPTS,
     LEVELS: LEVELS, MEDALS: MEDALS, ROLES: ROLES, STATUS: STATUS, SCHEMA: SCHEMA, TEMPLATES: TEMPLATES,
-    DEFAULT_CERT: DEFAULT_CERT, sha256: sha256, hashPassword: hashPassword, catById: catById, medalByKey: medalByKey,
+    DEFAULT_CERT: DEFAULT_CERT, DEFAULT_THEME: DEFAULT_THEME, DEFAULT_BRAND: DEFAULT_BRAND,
+    sha256: sha256, hashPassword: hashPassword, catById: catById, medalByKey: medalByKey,
     medalOf: medalOf, nextMedal: nextMedal, unlockedMedals: unlockedMedals, applySettings: applySettings,
     certSettings: certSettings, createApi: createApi, newId: newId
   };
+  return API_EXPORT;
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = TLD;
