@@ -199,6 +199,16 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.6; }
 .cat-opt .ci { font-size: 1.8rem; }
 .cat-opt .cn { flex: 1; font-size: 1rem; line-height: 1.35; }
 .cat-opt .cp { font-family: var(--head); font-weight: 700; color: var(--maroon); font-size: 1.2rem; white-space: nowrap; }
+.cat-opt .cicon { width: 54px; height: 54px; }
+@media (min-width: 700px) {
+  .cat-pick { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .cat-opt label { flex-direction: column; text-align: center; gap: 8px; padding: 18px 12px 14px; }
+  .cat-opt .cicon { width: 76px; height: 76px; border-radius: 22px; }
+  .cat-opt .cn { flex: 1; display: flex; align-items: center; }
+  .cat-opt .cp { background: var(--maroon-l); padding: 2px 14px; border-radius: 99px; }
+}
+@media (min-width: 1000px) { .cat-pick { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.criteria .cicon { width: 50px !important; height: 50px !important; }
 .cat-opt input:checked + label { border-color: var(--maroon); background: var(--maroon-l); box-shadow: 0 0 0 3px rgba(139,30,36,.15); }
 .cat-opt input:focus-visible + label { outline: 3px solid var(--gold); }
 
@@ -309,6 +319,17 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 1rem; }
 .empty.noimg { background: var(--navy-l); border-radius: 14px; margin-bottom: 16px; }
 .ic-big { display: inline-grid; place-items: center; width: 72px; height: 72px; border-radius: 22px; background: var(--navy-l); color: var(--navy-2); flex: none; }
 .ic-big .ic { width: 38px; height: 38px; }
+/* ไอคอนภาพแบบสมจริง */
+.art { display: block; width: 100%; height: 100%; flex: none; overflow: visible; }
+.cicon, .stat .ico, .ico, .ic-big { background: linear-gradient(160deg, #fff 0%, color-mix(in srgb, var(--c, #14244B) 9%, #fff) 100%);
+  box-shadow: 0 1px 0 #fff inset, 0 0 0 1px color-mix(in srgb, var(--c, #14244B) 14%, transparent) inset, 0 6px 14px rgba(20,36,75,.10); }
+.cicon .art { width: 80%; height: 80%; }
+.ico .art { width: 76%; height: 76%; }
+.ic-big .art { width: 74%; height: 74%; }
+.ico-maroon { --c: var(--maroon); } .ico-navy { --c: var(--navy-2); } .ico-gold { --c: var(--gold-d); } .ico-ok { --c: var(--ok); }
+.ic-big.bad { --c: var(--bad); }
+.tag .art { width: 1.45em; height: 1.45em; margin: -3px 0 -3px -4px; }
+.cicon.xl .art { width: 72%; height: 72%; }
 .ic-big.bad { background: var(--bad-l); color: var(--bad); }
 .toast { display: flex; gap: 10px; align-items: center; }
 .toast .ic { width: 22px; height: 22px; }

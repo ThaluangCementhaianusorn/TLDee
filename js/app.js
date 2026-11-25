@@ -34,8 +34,9 @@
     var i = { pending: 'clock', approved: 'check', returned: 'undo' }[s] || 'info';
     return '<span class="st ' + esc(s) + '">' + ic(i) + esc(TLD.STATUS[s] || s) + '</span>';
   }
-  function catIcon(id, cls) { var c = cat(id); return '<span class="cicon ' + (cls || '') + '" style="--c:' + c.color + '">' + ic(c.icon) + '</span>'; }
-  function catTag(id) { var c = cat(id); return '<span class="tag" style="--c:' + c.color + '">' + ic(c.icon) + esc(c.short) + '</span>'; }
+  function art(n) { return UI.art(n); }
+  function catIcon(id, cls) { var c = cat(id); return '<span class="cicon ' + (cls || '') + '" style="--c:' + c.color + '">' + art(c.icon) + '</span>'; }
+  function catTag(id) { var c = cat(id); return '<span class="tag" style="--c:' + c.color + '">' + art(c.icon) + esc(c.short) + '</span>'; }
   function imgOrIcon(d) {
     return d.imageUrl ? '<img src="' + esc(d.imageUrl) + '" alt="รูปหลักฐาน" loading="lazy" referrerpolicy="no-referrer">' : catIcon(d.category, 'xl');
   }
@@ -173,7 +174,7 @@
     return o;
   }
   function statCard(icon, cls, n, label, sub) {
-    return '<div class="card stat"><span class="ico ' + cls + '">' + ic(icon) + '</span><div><div class="num">' + n + '</div><div class="lbl">' + esc(label) + '</div>' +
+    return '<div class="card stat"><span class="ico ' + cls + '">' + art(icon) + '</span><div><div class="num">' + n + '</div><div class="lbl">' + esc(label) + '</div>' +
       (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div></div>';
   }
   function certSub(c) {
@@ -394,13 +395,13 @@
         var box = $('#vRes');
         if (!box) return;
         if (!r.valid) {
-          box.innerHTML = '<div class="verify-res bad"><span class="ic-big">' + ic('alert') + '</span><div><h3 style="color:var(--bad)">' +
+          box.innerHTML = '<div class="verify-res bad"><span class="ic-big">' + art('alert') + '</span><div><h3 style="color:var(--bad)">' +
             (r.revoked ? 'เอกสารนี้ไม่มีผลแล้ว' : 'ไม่พบเอกสารในระบบ') + '</h3><p>รหัส <b>' + esc(r.code) + '</b> ' +
             (r.revoked ? 'ไม่ตรงกับคะแนนสะสมปัจจุบันของผู้เรียน' : 'ไม่ได้ออกจากระบบคนดีศรีท่าหลวง หรือรหัสไม่ถูกต้อง') + '</p></div></div>';
           return;
         }
         var m = medalInfo(r.medal);
-        box.innerHTML = '<div class="verify-res ok"><span class="ic-big">' + ic('shield') + '</span><div style="flex:1"><h3 style="color:var(--ok)">เอกสารถูกต้อง ออกจากระบบจริง</h3>' +
+        box.innerHTML = '<div class="verify-res ok"><span class="ic-big">' + art('shield') + '</span><div style="flex:1"><h3 style="color:var(--ok)">เอกสารถูกต้อง ออกจากระบบจริง</h3>' +
           '<dl class="kv"><dt>ประเภท</dt><dd>' + (r.type === 'cert' ? 'เกียรติบัตร' : 'ระเบียนประวัติการทำความดี (E-Portfolio)') + '</dd>' +
           '<dt>ชื่อ-สกุล</dt><dd>' + esc(r.name) + '</dd><dt>แผนกวิชา</dt><dd>' + esc(r.dept) + '</dd><dt>ระดับชั้น</dt><dd>' + esc(r.level) + '</dd>' +
           (r.type === 'cert' ? '<dt>ระดับเกียรติบัตร</dt><dd>' + esc(m ? m.full : '-') + '</dd>' : '<dt>เหรียญปัจจุบัน</dt><dd>' + (m ? esc(m.name) : 'ยังไม่มี') + '</dd><dt>จำนวนความดี</dt><dd>' + r.count + ' รายการ</dd><dt>วันที่ออกเอกสาร</dt><dd>' + thDate(r.issued, true) + '</dd>') +
@@ -461,7 +462,7 @@
         toast('ยินดีต้อนรับ ' + r.user.name, 'ok');
         location.replace(siteBase() + '#/student');
       }).catch(function (e) {
-        el.innerHTML = '<div class="auth-wrap"><div class="card center"><span class="ic-big bad">' + ic('alert') + '</span><h2>เข้าสู่ระบบไม่สำเร็จ</h2><p>' + esc(e.message) +
+        el.innerHTML = '<div class="auth-wrap"><div class="card center"><span class="ic-big bad">' + art('alert') + '</span><h2>เข้าสู่ระบบไม่สำเร็จ</h2><p>' + esc(e.message) +
           '</p><p class="muted">หาก QR Code ถูกยกเลิก โปรดติดต่อครูที่ปรึกษาเพื่อรับบัตรใหม่</p><a class="btn btn-primary" href="#/login">' + ic('login') + 'ไปหน้าเข้าสู่ระบบ</a></div></div>';
       });
     }
@@ -619,7 +620,7 @@
       return '<div class="card center medal-card' + (ok ? '' : ' locked') + '"><div class="seal-sm">' + UI.sealSvg(m.key) + '</div><h3>' + esc(m.full) + '</h3>' +
         '<p class="muted">' + m.min + ' แต้ม · ' + esc(m.title) + '</p>' +
         (ok ? '<button class="btn btn-gold btn-block" data-cert="' + m.key + '">' + ic('printer') + 'พิมพ์เกียรติบัตร</button>' : '<button class="btn btn-ghost btn-block" disabled>' + ic('lock') + 'อีก ' + (m.min - s.points) + ' แต้ม</button>') + '</div>';
-    }).join('') + '</div><div class="card flat" style="margin-top:20px"><div class="row"><span class="ico ico-navy">' + ic('book') + '</span>' +
+    }).join('') + '</div><div class="card flat" style="margin-top:20px"><div class="row"><span class="ico ico-navy">' + art('book') + '</span>' +
       '<div style="flex:1;min-width:220px"><h3 style="margin:0">ระเบียนประวัติการทำความดีและจิตอาสา (Good Deeds E-Portfolio)</h3><p class="muted" style="margin:0">รวมทุกรายการที่อนุมัติแล้ว พร้อม QR Code ตรวจสอบ ใช้ประกอบการสมัครเรียนต่อ/สมัครงาน</p></div>' +
       '<button class="btn btn-primary" data-port="1"' + (s.count ? '' : ' disabled') + '>' + ic('printer') + 'พิมพ์ E-Portfolio (PDF)</button></div></div>';
   }
@@ -1272,7 +1273,7 @@
     roles: ['student', 'teacher', 'admin'],
     render: function (el) {
       var u = S.user;
-      el.innerHTML = '<div class="auth-wrap"><div class="card"><div class="auth-head"><span class="ic-big">' + ic('user') + '</span><h2>' + esc(u.name) + '</h2>' +
+      el.innerHTML = '<div class="auth-wrap"><div class="card"><div class="auth-head"><span class="ic-big">' + art('user') + '</span><h2>' + esc(u.name) + '</h2>' +
         '<p class="muted">' + esc(TLD.ROLES[u.role]) + ' · รหัส ' + esc(u.id) + (u.dept ? ' · ' + esc(u.dept) : '') + '</p></div>' +
         '<h3>' + ic('key') + ' เปลี่ยนรหัสผ่าน</h3><form id="pForm">' + pwField('oldPassword', 'รหัสผ่านเดิม') + pwField('newPassword', 'รหัสผ่านใหม่', 'new-password') +
         pwField('newPassword2', 'ยืนยันรหัสผ่านใหม่', 'new-password') + '<button class="btn btn-primary btn-block">' + ic('save') + 'บันทึกรหัสผ่านใหม่</button></form>' +
